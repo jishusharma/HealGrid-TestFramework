@@ -6,6 +6,8 @@ import org.openqa.selenium.WebDriver;
 import org.testng.annotations.*;
 import utils.GenericUtil;
 
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
@@ -23,6 +25,26 @@ public class BaseTest {
 
     @BeforeSuite(alwaysRun = true)
     public void setUpSuite() {
+        String healeniumHost = System.getProperty("healenium.host", "localhost");
+        try {
+            URL url = new URL("http://" + healeniumHost + ":7878/healenium/report");
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setConnectTimeout(2000);
+            conn.setReadTimeout(2000);
+            conn.connect();
+            int responseCode = conn.getResponseCode();
+            if (responseCode != 200) {
+                String msg = "Healenium backend not ready (HTTP " + responseCode + "). Please start Docker containers.";
+                LOGGER.error(msg);
+                throw new RuntimeException(msg);
+            }
+            LOGGER.info("Healenium backend is reachable.");
+        } catch (Exception e) {
+            String msg = "Healenium backend is not reachable at " + healeniumHost + ":7878. Please start Docker containers. Error: " + e.getMessage();
+            LOGGER.error(msg);
+            throw new RuntimeException(msg, e);
+        }
+        // --- original setup continues ---
         config = GenericUtil.getPropertiesFile(CONFIG_PROP);
         webDriverPool = new WebDriverPool(CustomThreadSafeDriver.DriverType.CHROME, 10, 5);
     }
@@ -41,7 +63,11 @@ public class BaseTest {
 
         WebDriver driver = getDriver();
         driver.get(config.getProperty("DemoQAMainPageUrl"));
-        driver.manage().window().maximize();
+        if (Boolean.parseBoolean(System.getProperty("headless", "false"))) {
+            // window size already set via ChromeOptions --window-size
+        } else {
+            driver.manage().window().maximize();
+        }
     }
 
     @AfterMethod(alwaysRun = true)

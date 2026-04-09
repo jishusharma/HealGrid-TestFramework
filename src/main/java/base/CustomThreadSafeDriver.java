@@ -4,6 +4,7 @@ import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.firefox.FirefoxDriver;
 import org.openqa.selenium.ie.InternetExplorerDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
 
 import java.util.function.Supplier;
 
@@ -41,7 +42,16 @@ public class CustomThreadSafeDriver {
     }
 
     public enum DriverType {
-        CHROME(ChromeDriver::new),
+        CHROME(() -> {
+            ChromeOptions options = new ChromeOptions();
+            if (Boolean.parseBoolean(System.getProperty("headless", "false"))) {
+                options.addArguments("--headless");
+                options.addArguments("--no-sandbox");
+                options.addArguments("--disable-dev-shm-usage");
+                options.addArguments("--window-size=1920,1080");
+            }
+            return new ChromeDriver(options);
+        }),
         FIREFOX(FirefoxDriver::new),
         IE(InternetExplorerDriver::new);
 

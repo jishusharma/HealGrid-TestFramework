@@ -5,27 +5,21 @@ import org.openqa.selenium.*;
 import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.support.ui.ExpectedCondition;
 import org.openqa.selenium.support.ui.ExpectedConditions;
-import org.openqa.selenium.support.ui.FluentWait;
-import org.openqa.selenium.support.ui.WebDriverWait;
-import utils.AdaptiveWait;
+import utils.WaitHelper;
 
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 public class SeleniumActions implements ElementActions, NavigationActions, ScrollActions, AdvancedActions, WaitActions,
         WindowTabActions {
     private static volatile SeleniumActions instance;
     private final Supplier<WebDriver> driverSupplier;
-    private final WebDriverWait wait;
 
     SeleniumActions(Supplier<WebDriver> driverSupplier) {
         this.driverSupplier = driverSupplier;
-        this.wait = new WebDriverWait(driverSupplier.get(), Duration.ofSeconds(10));
     }
 
     public static SeleniumActions getInstance(Supplier<WebDriver> driverSupplier) {
@@ -47,12 +41,12 @@ public class SeleniumActions implements ElementActions, NavigationActions, Scrol
     @Override
     public void click(WebElement element) {
         try {
-            WebElement clickableElement = AdaptiveWait.waitForElementClickable(getDriver(), element);
+            WebElement clickableElement = WaitHelper.waitForElementClickable(getDriver(), element);
             clickableElement.click();
         } catch (ElementClickInterceptedException e) {
             ((JavascriptExecutor) getDriver()).executeScript("arguments[0].click();", element);
         } catch (StaleElementReferenceException e) {
-            WebElement freshElement = AdaptiveWait.waitForElementClickable(getDriver(), element);
+            WebElement freshElement = WaitHelper.waitForElementClickable(getDriver(), element);
             freshElement.click();
         }
     }
@@ -65,15 +59,9 @@ public class SeleniumActions implements ElementActions, NavigationActions, Scrol
 
     @Override
     public void sendKeys(WebElement element, String text) {
-        try {
-            wait.until(ExpectedConditions.visibilityOf(element));
-            element.clear();
-            element.sendKeys(text);
-        } catch (StaleElementReferenceException e) {
-            WebElement freshElement = wait.until(ExpectedConditions.refreshed(ExpectedConditions.visibilityOf(element)));
-            freshElement.clear();
-            freshElement.sendKeys(text);
-        }
+        WaitHelper.waitForVisible(getDriver(), element);
+        element.clear();
+        element.sendKeys(text);
     }
 
     @Override
@@ -127,20 +115,16 @@ public class SeleniumActions implements ElementActions, NavigationActions, Scrol
         return getDriver().findElement(locator);
     }
 
-    // NavigationActions implementation
+    // NavigationActions
     @Override
     public void navigateToUrl(String url) {
         getDriver().get(url);
     }
 
-    // ScrollActions implementation
+    // ScrollActions
     @Override
     public void scrollIntoView(WebElement element) {
-        try {
-            ((JavascriptExecutor) getDriver()).executeScript("arguments[0].scrollIntoView(true);", element);
-        } catch (Exception e) {
-            // Log the exception
-        }
+        ((JavascriptExecutor) getDriver()).executeScript("arguments[0].scrollIntoView(true);", element);
     }
 
     @Override
@@ -148,7 +132,7 @@ public class SeleniumActions implements ElementActions, NavigationActions, Scrol
         scrollIntoView(findElement(locator));
     }
 
-    // AdvancedActions implementation
+    // AdvancedActions
     @Override
     public void hoverOverElement(WebElement element) {
         new Actions(getDriver()).moveToElement(element).perform();
@@ -179,59 +163,53 @@ public class SeleniumActions implements ElementActions, NavigationActions, Scrol
         dragAndDrop(findElement(source), findElement(target));
     }
 
-    // WaitActions implementation
+    // WaitActions – all delegated to WaitHelper
     @Override
     public void waitForElementVisible(By locator, int timeoutInSeconds) {
-        new WebDriverWait(getDriver(), Duration.ofSeconds(timeoutInSeconds))
-                .until(ExpectedConditions.visibilityOfElementLocated(locator));
+        WaitHelper.waitForVisible(getDriver(), locator);
     }
 
     @Override
     public void waitForElementVisible(By locator) {
-        wait.until(ExpectedConditions.visibilityOfElementLocated(locator));
+        WaitHelper.waitForVisible(getDriver(), locator);
     }
 
     @Override
     public void waitForElementVisible(WebElement element) {
-        wait.until(ExpectedConditions.visibilityOf(element));
+        WaitHelper.waitForVisible(getDriver(), element);
     }
 
     @Override
     public void waitForElements(ExpectedCondition<List<WebElement>> condition) {
-        wait.until(condition);
+        WaitHelper.waitFor(getDriver(), condition);
     }
 
     @Override
     public void waitForElement(ExpectedCondition<WebElement> condition) {
-        wait.until(condition);
+        WaitHelper.waitFor(getDriver(), condition);
     }
 
     @Override
     public void waitForElementClickable(By locator, int timeoutInSeconds) {
-        new WebDriverWait(getDriver(), Duration.ofSeconds(timeoutInSeconds))
-                .until(ExpectedConditions.elementToBeClickable(locator));
+        WaitHelper.waitForClickable(getDriver(), locator);
     }
 
     @Override
     public WebElement fluentWait(By locator, int timeoutInSeconds, int pollingTimeInMillis) {
-        return createFluentWait(timeoutInSeconds, pollingTimeInMillis)
-                .until(ExpectedConditions.presenceOfElementLocated(locator));
+        // Use WaitHelper with custom timeout (ignore polling, use default from WaitConfig)
+        return WaitHelper.waitFor(getDriver(),
+                ExpectedConditions.presenceOfElementLocated(locator),
+                Duration.ofSeconds(timeoutInSeconds));
     }
 
     @Override
-    public <V> V fluentWait(Function<WebDriver, V> condition, int timeoutInSeconds, int pollingTimeInMillis) {
-        return createFluentWait(timeoutInSeconds, pollingTimeInMillis)
-                .until(condition);
+    public <V> V fluentWait(java.util.function.Function<WebDriver, V> condition, int timeoutInSeconds, int pollingTimeInMillis) {
+        // Convert Function to ExpectedCondition
+        ExpectedCondition<V> ec = driver -> condition.apply(driver);
+        return WaitHelper.waitFor(getDriver(), ec, Duration.ofSeconds(timeoutInSeconds));
     }
 
-    private FluentWait<WebDriver> createFluentWait(int timeoutInSeconds, int pollingTimeInMillis) {
-        return new FluentWait<>(getDriver())
-                .withTimeout(Duration.ofSeconds(timeoutInSeconds))
-                .pollingEvery(Duration.ofMillis(pollingTimeInMillis))
-                .ignoring(NoSuchElementException.class, StaleElementReferenceException.class);
-    }
-
-    // WindowTabActions implementation
+    // WindowTabActions (unchanged)
     @Override
     public void switchToWindow(String windowHandle) {
         getDriver().switchTo().window(windowHandle);

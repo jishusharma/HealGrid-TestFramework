@@ -13,16 +13,25 @@ services:
       - healenium
 
   healenium:
-    image: healenium/hlm-backend:3.3.0    # Changed to a verified version
+    image: healenium/hlm-backend:3.3.0
     ports:
       - "7878:7878"
     links:
       - postgres-db
-    env_file: ./healenium.env
     environment:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-db:5432/healenium
       - SPRING_DATASOURCE_USERNAME=healenium_user
       - SPRING_DATASOURCE_PASSWORD=healenium_password
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+      - SPRING_LIQUIBASE_DEFAULT_SCHEMA=healenium
+      - HLM_LOG_LEVEL=info
+      - COLLECT_METRICS=true
+    healthcheck:
+      test: [ "CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:7878/healenium/report" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
     networks:
       - healenium
 
@@ -30,6 +39,18 @@ services:
     image: healenium/hlm-selector-imitator:1.1
     ports:
       - "8000:8000"
+    networks:
+      - healenium
+
+  test-runner:
+    build: .
+    depends_on:
+      - healenium
+      - selector-imitator
+    volumes:
+      - ./target/extent-reports:/app/target/extent-reports
+      - ./target/surefire-reports:/app/target/surefire-reports
+      - ./logs:/app/logs
     networks:
       - healenium
 

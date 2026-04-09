@@ -23,7 +23,7 @@ public class DemoQAMainPage extends BasePage {
     @FindBy(className = "card-body")
     private List<WebElement> categoryCards;
 
-    @FindBy(xpath = "//a[@href='https://demoqa.com']/img[@src='/images/Toolsqa.jpg']")
+    @FindBy(css = "a[href='https://demoqa.com'] img")
     private WebElement logo;
 
     public DemoQAMainPage(Supplier<WebDriver> driverSupplier) {
@@ -74,5 +74,9 @@ public class DemoQAMainPage extends BasePage {
     public WebElement getLogoElement() {
         actions.waitForElement(ExpectedConditions.visibilityOf(logo));
         return logo;
+    }
+
+    public WebElement getBannerImage() {
+        return bannerImage;
     }
 }

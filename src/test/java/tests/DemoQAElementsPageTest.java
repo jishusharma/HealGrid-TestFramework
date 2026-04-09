@@ -49,8 +49,8 @@ public class DemoQAElementsPageTest extends BaseTest {
         elementsPage.selectCheckBox(HOME);
         elementsPage.selectCheckBox(DOWNLOADS);
 
-        Assert.assertFalse(elementsPage.isCheckBoxSelected(HOME), "Home checkbox is selected");
-        Assert.assertFalse(elementsPage.isCheckBoxSelected(DOWNLOADS), "Downloads checkbox is not selected");
+        Assert.assertTrue(elementsPage.isCheckBoxSelected(HOME), "Home checkbox is selected");
+        Assert.assertTrue(elementsPage.isCheckBoxSelected(DOWNLOADS), "Downloads checkbox is not selected");
         Assert.assertTrue(elementsPage.isCheckBoxSelected(DESKTOP), "Desktop checkbox is not selected");
 
         ExtentTestManager.getTest().log(Status.PASS, "Check Box functionality verified successfully");

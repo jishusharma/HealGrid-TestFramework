@@ -28,9 +28,7 @@ public class OpenCVUtil implements AIUtil {
         }
     }
 
-    private OpenCVUtil() {
-        // Private constructor to prevent instantiation
-    }
+    private OpenCVUtil() {}
 
     public static synchronized OpenCVUtil getInstance() {
         if (instance == null) {
@@ -39,18 +37,30 @@ public class OpenCVUtil implements AIUtil {
         return instance;
     }
 
+    // Helper to resize second image to match first image's dimensions
+    private static Mat resizeToMatch(Mat target, Mat source) {
+        if (target.size().width == source.size().width && target.size().height == source.size().height) {
+            return source;
+        }
+        Mat resized = new Mat();
+        Imgproc.resize(source, resized, target.size());
+        return resized;
+    }
+
     @Override
     public boolean compareImages(String expectedImagePath, String actualImagePath, double threshold) {
-        Mat expectedImage = Imgcodecs.imread(expectedImagePath);
-        Mat actualImage = Imgcodecs.imread(actualImagePath);
-
-        if (expectedImage.empty() || actualImage.empty()) {
+        Mat expected = Imgcodecs.imread(expectedImagePath);
+        Mat actual = Imgcodecs.imread(actualImagePath);
+        if (expected.empty() || actual.empty()) {
             LOGGER.error("Failed to read images");
             return false;
         }
 
+        // Resize actual to match expected dimensions
+        Mat actualResized = resizeToMatch(expected, actual);
+
         Mat diff = new Mat();
-        Core.absdiff(expectedImage, actualImage, diff);
+        Core.absdiff(expected, actualResized, diff);
 
         Mat grayDiff = new Mat();
         Imgproc.cvtColor(diff, grayDiff, Imgproc.COLOR_BGR2GRAY);
@@ -64,7 +74,6 @@ public class OpenCVUtil implements AIUtil {
         double similarity = 1.0 - (double) diffPixels / totalPixels;
 
         LOGGER.info("Image similarity: {}", similarity);
-
         return similarity >= threshold;
     }
 
@@ -81,17 +90,10 @@ public class OpenCVUtil implements AIUtil {
 
     @Override
     public void captureFullPageScreenshot(WebDriver driver, String outputPath) {
-        // Scroll to the bottom of the page
         JavascriptExecutor js = (JavascriptExecutor) driver;
         js.executeScript("window.scrollTo(0, document.body.scrollHeight)");
-
-        // Get the total height of the page
         Long totalHeight = (Long) js.executeScript("return document.body.scrollHeight");
-
-        // Set the viewport size
         js.executeScript("window.resizeTo(1366, " + totalHeight + ")");
-
-        // Take the screenshot
         File screenshot = ((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE);
         try {
             FileUtils.copyFile(screenshot, new File(outputPath));
@@ -99,10 +101,6 @@ public class OpenCVUtil implements AIUtil {
         } catch (IOException e) {
             LOGGER.error("Failed to save full page screenshot", e);
         }
-
-        // Reset the viewport size
         js.executeScript("window.resizeTo(1366, 768)");
     }
-
-    // Add more AI-enhanced image processing methods as needed
 }

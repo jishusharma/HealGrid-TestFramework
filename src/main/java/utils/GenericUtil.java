@@ -98,7 +98,11 @@ public final class GenericUtil {
 
     public static boolean getScreenshot(WebDriver driver, String screenshotName, String filepath) {
         try {
-            File source = ((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE);
+            WebDriver originalDriver = driver;
+            if (driver instanceof com.epam.healenium.SelfHealingDriver) {
+                originalDriver = ((com.epam.healenium.SelfHealingDriver) driver).getDelegate();
+            }
+            File source = ((TakesScreenshot) originalDriver).getScreenshotAs(OutputType.FILE);
             File destination = new File(filepath + screenshotName + ".png");
             FileUtils.copyFile(source, destination);
             LOGGER.info("Screenshot captured successfully: {}", destination.getAbsolutePath());

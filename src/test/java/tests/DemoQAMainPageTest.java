@@ -5,6 +5,7 @@ import org.testng.Assert;
 import pages.DemoQAMainPage;
 import base.BaseTest;
 import com.aventstack.extentreports.Status;
+import utils.WaitHelper;
 import utils.listeners.ExtentTestManager;
 
 import java.util.Arrays;
@@ -12,7 +13,7 @@ import java.util.List;
 
 public class DemoQAMainPageTest extends BaseTest {
 
-    private static final String EXPECTED_PAGE_TITLE = "DEMOQA";
+    private static final String EXPECTED_PAGE_TITLE = "demosite";
     private static final List<String> EXPECTED_CATEGORY_CARDS = Arrays.asList(
             "Elements", "Forms", "Alerts, Frame & Windows", "Widgets", "Interactions", "Book Store Application"
     );
@@ -30,7 +31,7 @@ public class DemoQAMainPageTest extends BaseTest {
     @Test(description = "Verify banner image")
     public void verifyBannerImage() {
         DemoQAMainPage mainPage = new DemoQAMainPage(threadLocalDriver::get);
-
+        WaitHelper.waitForElementClickable(getDriver(), mainPage.getBannerImage());
         Assert.assertTrue(mainPage.isBannerImageDisplayed(), "Banner image is not displayed");
         Assert.assertEquals(mainPage.getBannerImageAltText(), "Selenium Online Training",
                 "Banner image alt text doesn't match");

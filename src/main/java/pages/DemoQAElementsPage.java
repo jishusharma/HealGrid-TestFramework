@@ -21,16 +21,16 @@ public class DemoQAElementsPage extends BasePage {
         config = GenericUtil.getPropertiesFile(CONFIG_PROP);
     }
 
-    @FindBy(id = "item-0")
+    @FindBy(css = "#item-0 a")
     private WebElement textBoxMenu;
 
-    @FindBy(id = "item-1")
+    @FindBy(xpath = "(//*[@id='item-1'])[1]/a")
     private WebElement checkBoxMenu;
 
     @FindBy(id = "item-2")
     private WebElement radioButtonMenu;
 
-    @FindBy(id = "item-3")
+    @FindBy(xpath = "//a[@href='/webtables']")
     private WebElement webTablesMenu;
 
     @FindBy(id = "userName")
@@ -51,7 +51,7 @@ public class DemoQAElementsPage extends BasePage {
     @FindBy(id = "output")
     private WebElement outputBox;
 
-    @FindBy(css = ".rct-icon-expand-close")
+    @FindBy(css = "span.rc-tree-switcher_close")
     private WebElement expandAllButton;
 
     @FindBy(id = "addNewRecordButton")
@@ -183,13 +183,19 @@ public class DemoQAElementsPage extends BasePage {
     }
 
     public void selectCheckBox(String label) {
-        WebElement checkbox = actions.getDriver().findElement(By.xpath("//span[text()='" + label + "']/ancestor::label"));
-        actions.click(checkbox);
+        WebElement checkbox = actions.getDriver().findElement(
+                By.xpath("//span[@role='checkbox' and contains(@aria-label, '" + label + "')]")
+        );
+        if (!"true".equals(checkbox.getAttribute("aria-checked"))) {
+            checkbox.click();
+        }
     }
 
     public boolean isCheckBoxSelected(String label) {
-        WebElement checkbox = actions.getDriver().findElement(By.xpath("//span[text()='" + label + "']/ancestor::label//input"));
-        return checkbox.isSelected();
+        WebElement checkbox = actions.getDriver().findElement(
+                By.cssSelector("span.rc-tree-checkbox[aria-label*='" + label + "']")
+        );
+        return "true".equals(checkbox.getAttribute("aria-checked"));
     }
 
     public void selectRadioButton(String label) {
@@ -218,7 +224,8 @@ public class DemoQAElementsPage extends BasePage {
     }
 
     public boolean isRecordPresent(String firstName, String lastName) {
-        return actions.isDisplayed(By.xpath("//div[@class='rt-tbody']//div[contains(text(), '" + firstName + "')]" +
-                "/following-sibling::div[contains(text(), '" + lastName + "')]"));
+        By locator = By.xpath("//tr[td[1][normalize-space()='" + firstName +
+                "'] and td[2][normalize-space()='" + lastName + "']]");
+        return actions.isDisplayed(locator);
     }
 }
