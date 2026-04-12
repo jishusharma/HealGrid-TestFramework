@@ -7,6 +7,11 @@ services:
       - POSTGRES_DB=healenium
       - POSTGRES_USER=healenium_user
       - POSTGRES_PASSWORD=healenium_password
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U healenium_user -d healenium" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     volumes:
       - ./healenium-backend/db/sql:/docker-entrypoint-initdb.d
     networks:
@@ -16,6 +21,9 @@ services:
     image: healenium/hlm-backend:3.3.0
     ports:
       - "7878:7878"
+    depends_on:
+      postgres-db:
+        condition: service_healthy
     links:
       - postgres-db
     environment:
@@ -45,12 +53,55 @@ services:
   test-runner:
     build: .
     depends_on:
-      - healenium
-      - selector-imitator
+      healenium:
+        condition: service_healthy
+      selector-imitator:
+        condition: service_started
+      selenium-hub:
+        condition: service_healthy
     volumes:
       - ./target/extent-reports:/app/target/extent-reports
       - ./target/surefire-reports:/app/target/surefire-reports
       - ./logs:/app/logs
+    networks:
+      - healenium
+
+  selenium-hub:
+    image: selenium/hub:4.21.0
+    container_name: selenium-hub
+    ports:
+      - "4444:4444"
+    healthcheck:
+      test: [ "CMD", "wget", "-qO-", "http://localhost:4444/status" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - healenium
+
+  chrome:
+    image: selenium/node-chrome:4.21.0
+    shm_size: 2gb
+    depends_on:
+      selenium-hub:
+        condition: service_healthy
+    environment:
+      - SE_EVENT_BUS_HOST=selenium-hub
+      - SE_EVENT_BUS_PUBLISH_PORT=4442
+      - SE_EVENT_BUS_SUBSCRIBE_PORT=4443
+    networks:
+      - healenium
+
+  firefox:
+    image: selenium/node-firefox:4.21.0
+    shm_size: 2gb
+    depends_on:
+      selenium-hub:
+        condition: service_healthy
+    environment:
+      - SE_EVENT_BUS_HOST=selenium-hub
+      - SE_EVENT_BUS_PUBLISH_PORT=4442
+      - SE_EVENT_BUS_SUBSCRIBE_PORT=4443
     networks:
       - healenium
 
