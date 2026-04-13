@@ -18,4 +18,4 @@ COPY testNgXmls ./testNgXmls
 RUN cp /app/src/main/resources/healenium-docker.properties \
        /app/src/main/resources/healenium.properties
 
-CMD ["mvn", "test", "-Dheadless=true", "-Dhealenium.host=healenium", "-Dsurefire.suiteXmlFiles=testNgXmls/docker.xml"]
+CMD ["mvn", "test", "-Dheadless=true", "-Dhealenium.host=healenium", "-Dexecution=grid", "-Dgrid.url=http://selenium-hub:4444", "-Dsurefire.suiteXmlFiles=testNgXmls/docker.xml"]
