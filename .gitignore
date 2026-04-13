@@ -15,3 +15,4 @@ healenium.env
 
 # Others
 *.ini
+/docker-run-filtered.ps1
