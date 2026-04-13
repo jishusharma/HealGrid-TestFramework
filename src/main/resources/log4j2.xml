@@ -29,7 +29,7 @@
         </Logger>
 
         <!-- Root logger -->
-        <Root level="debug" additivity="false">
+        <Root level="info" additivity="false">
             <AppenderRef ref="file-log"/>
             <AppenderRef ref="console"/>
         </Root>
