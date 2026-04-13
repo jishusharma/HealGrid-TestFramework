@@ -1,6 +1,7 @@
 package utils.listeners;
 
 import base.BaseTest;
+import base.DriverManager;
 import com.aventstack.extentreports.MediaEntityBuilder;
 import com.aventstack.extentreports.Status;
 import org.apache.logging.log4j.LogManager;
@@ -10,7 +11,6 @@ import org.testng.ITestContext;
 import org.testng.ITestListener;
 import org.testng.ITestResult;
 import utils.GenericUtil;
-import base.CustomThreadSafeDriver;
 
 import java.io.File;
 import java.io.IOException;
@@ -45,7 +45,7 @@ public class TestListener implements ITestListener {
     @Override
     public void onTestFailure(ITestResult result) {
         LOGGER.info("*** Test execution {} failed ***", result.getMethod().getMethodName());
-        WebDriver driver = CustomThreadSafeDriver.getCurrentDriver();
+        WebDriver driver = DriverManager.getDriver();
         if (driver != null) {
             String screenshotPath = captureScreenshot(driver, result.getMethod().getMethodName());
             if (screenshotPath != null) {
