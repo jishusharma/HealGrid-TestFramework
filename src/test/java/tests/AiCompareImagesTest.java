@@ -1,5 +1,6 @@
 package tests;
 
+import base.DriverManager;
 import org.opencv.core.Core;
 import org.testng.annotations.Test;
 import org.testng.Assert;
@@ -24,7 +25,7 @@ public class AiCompareImagesTest extends BaseTest {
     @Test(priority = 1, description = "Verify logo using AI image comparison")
     public void verifyLogoUsingAI() {
         LOGGER.info(">>> Running verifyLogoUsingAI (priority=1) second <<<");
-        DemoQAMainPage mainPage = new DemoQAMainPage(threadLocalDriver::get);
+        DemoQAMainPage mainPage = new DemoQAMainPage(DriverManager::getDriver);
         WebElement logoElement = mainPage.getLogoElement();
 
         String expectedLogoPath = "src/test/java/resources/ai_images/expected/Toolsqa.jpg";
@@ -46,7 +47,7 @@ public class AiCompareImagesTest extends BaseTest {
     // One‑time helper to generate a valid reference image (run once, then comment out)
     // @Test
     public void generateReferenceLogo() {
-        DemoQAMainPage mainPage = new DemoQAMainPage(threadLocalDriver::get);
+        DemoQAMainPage mainPage = new DemoQAMainPage(DriverManager::getDriver);
         WebElement logoElement = mainPage.getLogoElement();
         String referencePath = "src/test/java/resources/ai_images/expected/Toolsqa.jpg";
         aiUtil.captureElementScreenshot(logoElement, referencePath);
