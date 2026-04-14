@@ -1,4 +1,18 @@
 services:
+  jenkins:
+    image: jenkins/jenkins:lts-jdk17
+    container_name: jenkins
+    ports:
+      - "8080:8080"
+      - "50000:50000"
+    volumes:
+      - jenkins_home:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock   # allow Jenkins to run Docker commands
+    environment:
+      - DOCKER_HOST=unix:///var/run/docker.sock
+    networks:
+      - healenium
+
   postgres-db:
     image: postgres:11-alpine
     ports:
@@ -60,7 +74,7 @@ services:
       selenium-hub:
         condition: service_healthy
     volumes:
-      - ./target/extent-reports:/app/target/extent-reports
+      - ./target/allure-results:/app/target/allure-results
       - ./target/surefire-reports:/app/target/surefire-reports
       - ./logs:/app/logs
     networks:
@@ -108,3 +122,6 @@ services:
 networks:
   healenium:
     driver: bridge
+
+volumes:
+  jenkins_home:

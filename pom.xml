@@ -10,9 +10,10 @@
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <allure.version>2.23.0</allure.version>
+        <aspectj.version>1.9.20</aspectj.version>
     </properties>
 
-    <!-- All existing dependencies remain exactly the same -->
     <dependencies>
         <!-- Selenium -->
         <dependency>
@@ -33,11 +34,18 @@
             <version>7.4.0</version>
         </dependency>
 
-        <!-- Extent Reports -->
+        <!-- Allure TestNG — replaces Extent Reports -->
         <dependency>
-            <groupId>com.aventstack</groupId>
-            <artifactId>extentreports</artifactId>
-            <version>4.0.9</version>
+            <groupId>io.qameta.allure</groupId>
+            <artifactId>allure-testng</artifactId>
+            <version>${allure.version}</version>
+        </dependency>
+
+        <!-- AspectJ — required for Allure @Step and @Attachment to work -->
+        <dependency>
+            <groupId>org.aspectj</groupId>
+            <artifactId>aspectjweaver</artifactId>
+            <version>${aspectj.version}</version>
         </dependency>
 
         <!-- Log4j for Logging -->
@@ -152,7 +160,11 @@
                         <include>**/tests/*Test.java</include>
                     </includes>
                     <testFailureIgnore>true</testFailureIgnore>
-                    <argLine>-Djava.library.path=${project.build.directory}/lib/nu/pattern/opencv/windows/x86_64</argLine>
+                    <!-- aspectjweaver agent: required for Allure @Step/@Attachment -->
+                    <argLine>
+                        -javaagent:"${settings.localRepository}/org/aspectj/aspectjweaver/${aspectj.version}/aspectjweaver-${aspectj.version}.jar"
+                        -Djava.library.path=${project.build.directory}/lib/nu/pattern/opencv/windows/x86_64
+                    </argLine>
                 </configuration>
             </plugin>
 
@@ -160,20 +172,30 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.13.0</version>   <!-- or 3.11.0+ -->
+                <version>3.13.0</version>
                 <configuration>
-                    <release>11</release>   <!-- better than source/target -->
+                    <release>11</release>
                     <compilerArgs>
-                        <arg>-parameters</arg> <!-- helps with TestNG/Guice -->
+                        <arg>-parameters</arg>
                     </compilerArgs>
                     <annotationProcessorPaths>
-                        <!-- If you use Lombok annotations, add this -->
                         <path>
                             <groupId>org.projectlombok</groupId>
                             <artifactId>lombok</artifactId>
                             <version>1.18.24</version>
                         </path>
                     </annotationProcessorPaths>
+                </configuration>
+            </plugin>
+
+            <!-- Allure Maven Plugin — generates report from allure-results -->
+            <plugin>
+                <groupId>io.qameta.allure</groupId>
+                <artifactId>allure-maven</artifactId>
+                <version>2.12.0</version>
+                <configuration>
+                    <reportVersion>${allure.version}</reportVersion>
+                    <resultsDirectory>${project.build.directory}/allure-results</resultsDirectory>
                 </configuration>
             </plugin>
 

@@ -1,16 +1,18 @@
 package base;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.support.PageFactory;
-import com.aventstack.extentreports.Status;
 import implementation.SeleniumActions;
 import utils.WaitHelper;
-import utils.listeners.ExtentTestManager;
 
 import java.util.function.Supplier;
 
 public abstract class BasePage {
+
+    protected static final Logger LOGGER = LogManager.getLogger(BasePage.class);
     protected final Supplier<WebDriver> driverSupplier;
     protected final SeleniumActions actions;
 
@@ -24,48 +26,34 @@ public abstract class BasePage {
         try {
             PageFactory.initElements(getDriver(), this);
             waitForPageLoad();
-            logInitialization(true);
+            LOGGER.info("Initialized {}", this.getClass().getSimpleName());
         } catch (Exception e) {
-            logInitialization(false);
+            LOGGER.error("Failed to initialize {}", this.getClass().getSimpleName());
             throw e;
         }
-    }
-
-    private void logInitialization(boolean success) {
-        Status status = success ? Status.INFO : Status.ERROR;
-        String message = success
-                ? String.format("Initialized %s", this.getClass().getSimpleName())
-                : String.format("Failed to initialize %s", this.getClass().getSimpleName());
-        ExtentTestManager.getTest().log(status, message);
     }
 
     protected WebDriver getDriver() {
         return driverSupplier.get();
     }
 
-    // Uses WaitHelper for unified page load and AJAX waits
     protected void waitForPageLoad() {
         try {
             WaitHelper.waitForPageLoad(getDriver());
 
-            // Wait for page-specific element
             By uniqueElement = getUniqueElement();
             if (uniqueElement != null) {
                 WaitHelper.waitForVisible(getDriver(), uniqueElement);
             }
 
             waitForAdditionalConditions();
-
-            ExtentTestManager.getTest().log(Status.PASS,
-                    String.format("%s loaded successfully", this.getClass().getSimpleName()));
+            LOGGER.info("{} loaded successfully", this.getClass().getSimpleName());
         } catch (Exception e) {
-            ExtentTestManager.getTest().log(Status.FAIL,
-                    String.format("Page load failed for %s: %s", this.getClass().getSimpleName(), e.getMessage()));
+            LOGGER.error("Page load failed for {}: {}", this.getClass().getSimpleName(), e.getMessage());
             throw e;
         }
     }
 
-    // Override in child classes to add custom wait conditions
     protected void waitForAdditionalConditions() {
         // default does nothing
     }
@@ -83,8 +71,7 @@ public abstract class BasePage {
             waitForPageLoad();
             return true;
         } catch (Exception e) {
-            ExtentTestManager.getTest().log(Status.WARNING,
-                    "Page load check failed: " + e.getMessage());
+            LOGGER.warn("Page load check failed: {}", e.getMessage());
             return false;
         }
     }
@@ -93,11 +80,9 @@ public abstract class BasePage {
         try {
             actions.navigateToUrl(url);
             waitForPageLoad();
-            ExtentTestManager.getTest().log(Status.PASS,
-                    "Successfully navigated to: " + url);
+            LOGGER.info("Successfully navigated to: {}", url);
         } catch (Exception e) {
-            ExtentTestManager.getTest().log(Status.FAIL,
-                    "Navigation failed: " + e.getMessage());
+            LOGGER.error("Navigation failed: {}", e.getMessage());
             throw e;
         }
     }

@@ -4,12 +4,12 @@ import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.openqa.selenium.*;
-import utils.listeners.ExtentManager;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Paths;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -18,6 +18,7 @@ import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 
 public final class GenericUtil {
+
     private static final Logger LOGGER = LogManager.getLogger(GenericUtil.class);
     private static final ConcurrentHashMap<String, Properties> PROPERTIES_CACHE = new ConcurrentHashMap<>();
     private static final String TARGET = "target";
@@ -113,8 +114,10 @@ public final class GenericUtil {
         }
     }
 
+    // Screenshot path now uses allure-results directory (Extent removed)
     public static String getScreenShotPath() {
-        String path = ExtentManager.getReportFilePath() + File.separator + "screenshots" + File.separator;
+        String path = Paths.get(System.getProperty("user.dir"), "target", "allure-results", "screenshots")
+                .toString() + File.separator;
         File screenshotDir = new File(path);
         if (!screenshotDir.exists() && !screenshotDir.mkdirs()) {
             LOGGER.error("Failed to create screenshot directory: {}", path);
@@ -122,7 +125,6 @@ public final class GenericUtil {
         LOGGER.info("Screenshot path: {}", path);
         return path;
     }
-
 
     public static Properties getPropertiesFile(String propertiesFile) {
         return PROPERTIES_CACHE.computeIfAbsent(propertiesFile, key -> {

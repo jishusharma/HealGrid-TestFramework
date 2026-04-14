@@ -5,8 +5,6 @@ import org.testng.annotations.Test;
 import org.testng.Assert;
 import pages.DemoQAElementsPage;
 import base.BaseTest;
-import com.aventstack.extentreports.Status;
-import utils.listeners.ExtentTestManager;
 import implementation.HealeniumSeleniumActions;
 
 public class DemoQAElementsPageTest extends BaseTest {
@@ -30,10 +28,7 @@ public class DemoQAElementsPageTest extends BaseTest {
                 currentAddress, "Output current address doesn't match");
         Assert.assertEquals(elementsPage.getOutputPermanentAddress().substring(20),
                 permanentAddress, "Output permanent address doesn't match");
-
-        ExtentTestManager.getTest().log(Status.PASS, "Text Box functionality verified successfully");
     }
-
 
     @Test(description = "Verify Check Box functionality")
     public void verifyCheckBox() {
@@ -50,7 +45,6 @@ public class DemoQAElementsPageTest extends BaseTest {
         Assert.assertTrue(elementsPage.isCheckBoxSelected(HOME), "Home checkbox is selected");
         Assert.assertTrue(elementsPage.isCheckBoxSelected(DOWNLOADS), "Downloads checkbox is not selected");
         Assert.assertTrue(elementsPage.isCheckBoxSelected(DESKTOP), "Desktop checkbox is not selected");
-        ExtentTestManager.getTest().log(Status.PASS, "Check Box functionality verified successfully");
     }
 
     @Test(description = "Verify Radio Button functionality")
@@ -64,7 +58,6 @@ public class DemoQAElementsPageTest extends BaseTest {
                 "Impressive radio button is not selected");
         Assert.assertEquals(elementsPage.getSelectedRadioButtonText(), "Impressive",
                 "Selected radio button text doesn't match");
-        ExtentTestManager.getTest().log(Status.PASS, "Radio Button functionality verified successfully");
     }
 
     @Test(description = "Verify Web Tables functionality")
@@ -73,10 +66,8 @@ public class DemoQAElementsPageTest extends BaseTest {
                 HealeniumSeleniumActions.getInstance(DriverManager::getDriver).getDriver());
         elementsPage.navigateToElementsPage();
         elementsPage.navigateToWebTables();
-        elementsPage.addNewRecord("Test", "Table", "name@email.com", "50", "1000000",
-                "IT");
+        elementsPage.addNewRecord("Test", "Table", "name@email.com", "50", "1000000", "IT");
         Assert.assertTrue(elementsPage.isRecordPresent("Test", "Table"),
                 "New record is not present in the table");
-        ExtentTestManager.getTest().log(Status.PASS, "Web Tables functionality verified successfully");
     }
 }
