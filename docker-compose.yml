@@ -16,7 +16,9 @@
       - healenium
 
   postgres-db:
-    image: postgres:11-alpine
+    build:
+      context: .
+      dockerfile: Dockerfile.postgres
     ports:
       - "5432:5432"
     environment:
@@ -24,13 +26,11 @@
       - POSTGRES_USER=healenium_user
       - POSTGRES_PASSWORD=healenium_password
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U healenium_user -d healenium" ]
+      test: [ "CMD-SHELL", "pg_isready -U healenium_user -d healenium && psql -U healenium_user -d healenium -c 'SELECT schema_name FROM information_schema.schemata' | grep -q healenium" ]
       interval: 10s
       timeout: 5s
-      retries: 5
-      start_period: 30s
-    volumes:
-      - ./healenium-backend/db/sql:/docker-entrypoint-initdb.d
+      retries: 10
+      start_period: 20s
     networks:
       - healenium
 
