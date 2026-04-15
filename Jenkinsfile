@@ -30,8 +30,8 @@ pipeline {
             steps {
                 echo 'Starting Grid + Healenium + Running tests...'
                 sh 'docker-compose -f $COMPOSE_FILE up --build -V --abort-on-container-exit postgres-db healenium selector-imitator selenium-hub chrome firefox test-runner'
-                echo 'Copying Allure results from test-runner container...'
-                sh 'docker cp healgrid-pipeline-test-runner-1:/app/target/allure-results ./target/ || true'
+                sh 'docker ps -a | grep test-runner'
+                sh 'docker cp healgrid-pipeline-test-runner-1:/app/target/allure-results ./target/'
             }
         }
 
