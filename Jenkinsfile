@@ -29,7 +29,7 @@ pipeline {
         stage('Test') {
             steps {
                 echo 'Starting Grid + Healenium + Running tests...'
-                sh 'docker-compose -f $COMPOSE_FILE up --build --abort-on-container-exit postgres-db healenium selector-imitator selenium-hub chrome firefox test-runner'
+                sh 'docker-compose -f $COMPOSE_FILE up --build -V --abort-on-container-exit postgres-db healenium selector-imitator selenium-hub chrome firefox test-runner'
             }
         }
 
@@ -50,7 +50,7 @@ pipeline {
     post {
         always {
             echo 'Cleaning up containers...'
-            sh 'docker-compose down'
+            sh 'docker-compose down -v'
         }
         success {
             echo 'Pipeline passed!'
