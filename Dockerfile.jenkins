@@ -10,6 +10,13 @@ RUN curl -L "https://github.com/docker/compose/releases/download/v2.24.0/docker-
     -o /usr/local/bin/docker-compose \
     && chmod +x /usr/local/bin/docker-compose
 
+# Install Allure CLI
+RUN curl -sL https://github.com/allure-framework/allure2/releases/download/2.27.0/allure-2.27.0.tgz \
+    -o allure-2.27.0.tgz \
+    && tar -zxf allure-2.27.0.tgz -C /opt/ \
+    && ln -s /opt/allure-2.27.0/bin/allure /usr/local/bin/allure \
+    && rm allure-2.27.0.tgz
+
 # Docker socket on Docker Desktop has GID 0 (root) — add jenkins to root group
 RUN usermod -aG root jenkins
 
