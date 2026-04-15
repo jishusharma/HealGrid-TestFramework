@@ -1,4 +1,4 @@
-pipeline {
+﻿pipeline {
 
     agent any
 
@@ -29,7 +29,7 @@ pipeline {
         stage('Test') {
             steps {
                 echo 'Starting Grid + Healenium + Running tests...'
-                sh 'docker-compose -f $COMPOSE_FILE up --build --abort-on-container-exit'
+                sh 'docker-compose -f $COMPOSE_FILE up --build --abort-on-container-exit postgres-db healenium selector-imitator selenium-hub chrome firefox test-runner'
             }
         }
 

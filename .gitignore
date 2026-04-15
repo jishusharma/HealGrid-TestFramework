@@ -16,3 +16,6 @@ healenium.env
 # Others
 *.ini
 /docker-run-filtered.ps1
+/dump-project.ps1
+
+allure-results/
