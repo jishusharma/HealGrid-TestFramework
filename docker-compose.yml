@@ -24,10 +24,11 @@
       - POSTGRES_USER=healenium_user
       - POSTGRES_PASSWORD=healenium_password
     healthcheck:
-      test: [ "CMD-SHELL", "psql -U healenium_user -d healenium -c 'SELECT 1 FROM information_schema.schemata WHERE schema_name=''healenium''' | grep -q 1" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      test: [ "CMD-SHELL", "pg_isready -U healenium_user -d healenium && psql -U healenium_user -d healenium -c '\\dn' | grep -q healenium" ]
+        interval: 10s
+        timeout: 5s
+        retries: 10
+        start_period: 20s
     volumes:
       - ./healenium-backend/db/sql:/docker-entrypoint-initdb.d
     networks:
