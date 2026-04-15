@@ -77,7 +77,6 @@
       selenium-hub:
         condition: service_healthy
     volumes:
-      - ./target/allure-results:/app/target/allure-results
       - ./target/surefire-reports:/app/target/surefire-reports
       - ./logs:/app/logs
     networks:
