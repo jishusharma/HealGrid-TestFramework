@@ -24,7 +24,7 @@
       - POSTGRES_USER=healenium_user
       - POSTGRES_PASSWORD=healenium_password
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U healenium_user -d healenium" ]
+      test: [ "CMD-SHELL", "psql -U healenium_user -d healenium -c 'SELECT 1 FROM information_schema.schemata WHERE schema_name=''healenium''' | grep -q 1" ]
       interval: 10s
       timeout: 5s
       retries: 5
