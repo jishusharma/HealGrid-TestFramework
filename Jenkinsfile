@@ -55,7 +55,15 @@ pipeline {
         stage('Report') {
             steps {
                 echo 'Publishing Allure report...'
-                allure tool: 'Allure', results: [[path: 'target/allure-results']]
+                sh 'allure generate target/allure-results --clean -o target/allure-report'
+                publishHTML([
+                    allowMissing: false,
+                    alwaysLinkToLastBuild: true,
+                    keepAll: true,
+                    reportDir: 'target/allure-report',
+                    reportFiles: 'index.html',
+                    reportName: 'Allure Report'
+                ])
             }
         }
 
