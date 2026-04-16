@@ -55,11 +55,7 @@ pipeline {
         stage('Report') {
             steps {
                 echo 'Publishing Allure report...'
-                allure([
-                    includeProperties: false,
-                    jdk: '',
-                    results: [[path: 'target/allure-results']]
-                ])
+                allure tool: 'Allure', results: [[path: 'target/allure-results']]
             }
         }
 
