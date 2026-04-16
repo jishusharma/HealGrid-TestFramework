@@ -12,6 +12,7 @@
       - /var/run/docker.sock:/var/run/docker.sock   # allow Jenkins to run Docker commands
     environment:
       - DOCKER_HOST=unix:///var/run/docker.sock
+      - JAVA_OPTS=-Dhudson.model.DirectoryBrowserSupport.CSP=
     networks:
       - healenium
 
