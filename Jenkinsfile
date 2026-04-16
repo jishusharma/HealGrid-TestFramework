@@ -55,14 +55,10 @@ pipeline {
         stage('Report') {
             steps {
                 echo 'Publishing Allure report...'
-                sh 'allure generate target/allure-results --clean -o target/allure-report'
-                publishHTML([
-                    allowMissing: false,
-                    alwaysLinkToLastBuild: true,
-                    keepAll: true,
-                    reportDir: 'target/allure-report',
-                    reportFiles: 'index.html',
-                    reportName: 'Allure Report'
+                allure([
+                    includeProperties: false,
+                    jdk: '',
+                    results: [[path: 'target/allure-results']]
                 ])
             }
         }
