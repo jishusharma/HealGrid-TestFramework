@@ -164,6 +164,7 @@
                     <argLine>
                         -javaagent:"${settings.localRepository}/org/aspectj/aspectjweaver/${aspectj.version}/aspectjweaver-${aspectj.version}.jar"
                         -Djava.library.path=${project.build.directory}/lib/nu/pattern/opencv/windows/x86_64
+                        -Dallure.results.directory=${project.build.directory}/allure-results
                     </argLine>
                 </configuration>
             </plugin>
