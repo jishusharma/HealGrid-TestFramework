@@ -32,7 +32,11 @@ pipeline {
                 sh 'docker-compose -f $COMPOSE_FILE up --build -V --abort-on-container-exit postgres-db healenium selector-imitator selenium-hub chrome firefox test-runner'
                 sh 'docker ps -a | grep test-runner'
                 sh '''
-                    CONTAINER_ID=$(docker-compose ps -q test-runner)
+                    CONTAINER_ID=$(docker-compose ps -a -q test-runner)
+                    if [ -z "$CONTAINER_ID" ]; then
+                        echo "ERROR: No container found for service test-runner"
+                        exit 1
+                    fi
                     echo "Container ID: $CONTAINER_ID"
                     # Try to find allure-results directory
                     if docker cp $CONTAINER_ID:/app/target/allure-results/. ./target/allure-results/ 2>/dev/null; then
