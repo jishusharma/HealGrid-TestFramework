@@ -31,7 +31,20 @@ pipeline {
                 echo 'Starting Grid + Healenium + Running tests...'
                 sh 'docker-compose -f $COMPOSE_FILE up --build -V --abort-on-container-exit postgres-db healenium selector-imitator selenium-hub chrome firefox test-runner'
                 sh 'docker ps -a | grep test-runner'
-                sh 'docker cp healgrid-pipeline-test-runner-1:/app/target/allure-results ./target/'
+                sh '''
+                    CONTAINER_ID=$(docker-compose ps -q test-runner)
+                    echo "Container ID: $CONTAINER_ID"
+                    # Try to find allure-results directory
+                    if docker cp $CONTAINER_ID:/app/target/allure-results/. ./target/allure-results/ 2>/dev/null; then
+                        echo "Copied from /app/target/allure-results"
+                    elif docker cp $CONTAINER_ID:/app/allure-results/. ./target/allure-results/ 2>/dev/null; then
+                        echo "Copied from /app/allure-results (fallback)"
+                    else
+                        echo "ERROR: allure-results not found in container"
+                        exit 1
+                    fi
+                    ls -la ./target/allure-results/
+                '''
             }
         }
 
@@ -66,4 +79,3 @@ pipeline {
     }
 
 }
-
