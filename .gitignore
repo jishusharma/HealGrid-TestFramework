@@ -13,3 +13,4 @@ logs/
 /dump-project.ps1
 
 allure-results/
+allure-report/
