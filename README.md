@@ -1,6 +1,6 @@
 # HealGrid-TestFramework
 
-[![Build Status](http://localhost:8080/job/HealGrid-Pipeline/badge/icon)](http://localhost:8080/job/HealGrid-Pipeline/)
+[![Build Status](https://canon-anymore-maturity.ngrok-free.dev/buildStatus/icon?job=HealGrid-TestFramework&ngrok-skip-browser-warning=true)](https://canon-anymore-maturity.ngrok-free.dev/job/HealGrid-TestFramework/)
 ![Java](https://img.shields.io/badge/Java-17-blue)
 ![Selenium](https://img.shields.io/badge/Selenium-4.11-green)
 ![Healenium](https://img.shields.io/badge/Healenium-3.5.1-purple)
