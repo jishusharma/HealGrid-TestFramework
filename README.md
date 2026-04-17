@@ -1,5 +1,6 @@
 # HealGrid-TestFramework
 
+[![Build Status](http://localhost:8080/job/HealGrid-Pipeline/badge/icon)](http://localhost:8080/job/HealGrid-Pipeline/)
 ![Java](https://img.shields.io/badge/Java-17-blue)
 ![Selenium](https://img.shields.io/badge/Selenium-4.11-green)
 ![Healenium](https://img.shields.io/badge/Healenium-3.5.1-purple)
