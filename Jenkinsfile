@@ -26,6 +26,13 @@ pipeline {
             }
         }
 
+        stage('API Tests') {
+            steps {
+                echo 'Running REST Assured API tests...'
+                sh 'mvn test -Dsurefire.suiteXmlFiles=testNgXmls/api.xml'
+            }
+        }
+
         stage('Test') {
             steps {
                 echo 'Starting Grid + Healenium + Running tests...'
