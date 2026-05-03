@@ -34,6 +34,8 @@
       start_period: 20s
     networks:
       - healenium
+    volumes:
+      - healenium_db:/var/lib/postgresql/data
 
   healenium:
     image: healenium/hlm-backend:3.3.0
@@ -79,7 +81,9 @@
         condition: service_healthy
     volumes:
       - ./target/surefire-reports:/app/target/surefire-reports
+      - ./target/allure-results:/app/target/allure-results
       - ./logs:/app/logs
+      - maven_repo:/root/.m2
     networks:
       - healenium
 
@@ -129,3 +133,5 @@ networks:
 
 volumes:
   jenkins_home:
+  healenium_db:
+  maven_repo:
