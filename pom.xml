@@ -204,6 +204,13 @@
                 </configuration>
             </plugin>
 
+            <!-- Exec Maven Plugin for running AiFailureAnalyzer -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.1.0</version>
+            </plugin>
+
             <!-- Allure Maven Plugin — generates report from allure-results -->
             <plugin>
                 <groupId>io.qameta.allure</groupId>
@@ -268,6 +275,12 @@
                         </goals>
                     </execution>
                 </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.1.0</version>
             </plugin>
         </plugins>
     </build>

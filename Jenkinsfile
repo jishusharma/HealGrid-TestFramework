@@ -33,6 +33,52 @@ pipeline {
                 sh 'ls -la ./target/allure-results/'
             }
         }
+        stage('AI Failure Analysis') {
+            steps {
+                echo 'Analysing failures with Claude AI...'
+                withCredentials([string(credentialsId: 'GROQ_API_KEY', variable: 'CLAUDE_API_KEY')]) {
+                    sh 'mvn exec:java -Dexec.mainClass=ai.AiFailureAnalyzer'
+                }
+                script {
+                    if (fileExists('target/ai-failure-report.json')) {
+                        archiveArtifacts artifacts: 'target/ai-failure-report.json', allowEmptyArchive: true
+                        echo 'AI failure report archived.'
+                    } else {
+                        echo 'No failures detected — report not generated.'
+                    }
+                }
+            }
+        }
+        stage('Rerun RERUN-tagged Tests') {
+            steps {
+                script {
+                    if (fileExists('target/ai-failure-report.json')) {
+                        def rerunTests = sh(
+                            script: '''python3 -c "
+import json
+with open('target/ai-failure-report.json') as f:
+    data = json.load(f)
+tests = []
+for c in data.get('clusters', []):
+    if c.get('decision') == 'RERUN':
+        tests.extend(c.get('tests', []))
+print(','.join(tests))
+"''',
+                            returnStdout: true
+                        ).trim()
+
+                        if (rerunTests) {
+                            echo "Rerunning RERUN-tagged tests: ${rerunTests}"
+                            sh "mvn test -Dtest=${rerunTests} -DfailIfNoTests=false"
+                        } else {
+                            echo 'No tests marked RERUN. Skipping.'
+                        }
+                    } else {
+                        echo 'No AI report found. Skipping rerun.'
+                    }
+                }
+            }
+        }
         stage('Report') {
             steps {
                 echo 'Publishing Allure report...'

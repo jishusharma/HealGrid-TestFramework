@@ -1,6 +1,7 @@
 package ai;
 
 import org.w3c.dom.*;
+
 import javax.xml.parsers.*;
 import java.io.*;
 import java.net.URI;
@@ -10,11 +11,11 @@ import java.util.*;
 
 public class AiFailureAnalyzer {
 
-    private static final String API_URL    = "https://api.anthropic.com/v1/messages";
-    private static final String MODEL      = "claude-opus-4-5-20251101";
-    private static final String SUREFIRE   = "target/surefire-reports";
-    private static final String PROMPT     = "src/test/resources/prompts/failure-analysis-prompt.txt";
-    private static final String OUTPUT     = "target/ai-failure-report.json";
+    private static final String API_URL = "https://api.groq.com/openai/v1/chat/completions";
+    private static final String MODEL = "llama3-8b-8192";
+    private static final String SUREFIRE = "target/surefire-reports";
+    private static final String PROMPT = "src/test/resources/ai_prompts/failure-analysis-prompt.txt";
+    private static final String OUTPUT = "target/ai-failure-report.json";
 
     public static void main(String[] args) throws Exception {
         String apiKey = System.getenv("CLAUDE_API_KEY");
@@ -32,8 +33,8 @@ public class AiFailureAnalyzer {
         System.out.println("[AiFailureAnalyzer] " + failures.size() + " failure(s) found. Calling Claude API...");
 
         String systemPrompt = Files.readString(Path.of(PROMPT)).strip();
-        String userMessage  = buildUserMessage(failures);
-        String result       = callClaudeApi(apiKey, systemPrompt, userMessage);
+        String userMessage = buildUserMessage(failures);
+        String result = callClaudeApi(apiKey, systemPrompt, userMessage);
 
         handleOutput(result, detectEnv());
     }
@@ -54,19 +55,19 @@ public class AiFailureAnalyzer {
 
             for (int i = 0; i < testcases.getLength(); i++) {
                 Element tc = (Element) testcases.item(i);
-                String className  = tc.getAttribute("classname");
+                String className = tc.getAttribute("classname");
                 String methodName = tc.getAttribute("name");
 
-                NodeList failNodes  = tc.getElementsByTagName("failure");
+                NodeList failNodes = tc.getElementsByTagName("failure");
                 NodeList errorNodes = tc.getElementsByTagName("error");
 
                 if (failNodes.getLength() == 0 && errorNodes.getLength() == 0) continue;
 
-                Element el      = (Element) (failNodes.getLength() > 0 ? failNodes.item(0) : errorNodes.item(0));
-                String message  = el.getAttribute("message");
-                String type     = el.getAttribute("type");
-                String[] lines  = el.getTextContent().trim().split("\n");
-                String trace    = String.join("\n", Arrays.copyOfRange(lines, 0, Math.min(5, lines.length)));
+                Element el = (Element) (failNodes.getLength() > 0 ? failNodes.item(0) : errorNodes.item(0));
+                String message = el.getAttribute("message");
+                String type = el.getAttribute("type");
+                String[] lines = el.getTextContent().trim().split("\n");
+                String trace = String.join("\n", Arrays.copyOfRange(lines, 0, Math.min(5, lines.length)));
 
                 failures.add(className + "#" + methodName + " | " + type + ": " + message + "\n" + trace);
             }
@@ -88,15 +89,16 @@ public class AiFailureAnalyzer {
 
     private static String callClaudeApi(String apiKey, String system, String user) throws Exception {
         String body = "{\"model\":\"" + MODEL + "\",\"max_tokens\":1000," +
-                "\"system\":\"" + escapeJson(system) + "\"," +
-                "\"messages\":[{\"role\":\"user\",\"content\":\"" + escapeJson(user) + "\"}]}";
+                "\"messages\":[" +
+                "{\"role\":\"system\",\"content\":\"" + escapeJson(system) + "\"}," +
+                "{\"role\":\"user\",\"content\":\"" + escapeJson(user) + "\"}" +
+                "]}";
 
         HttpClient client = HttpClient.newHttpClient();
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(API_URL))
                 .header("Content-Type", "application/json")
-                .header("x-api-key", apiKey)
-                .header("anthropic-version", "2023-06-01")
+                .header("Authorization", "Bearer " + apiKey)
                 .POST(HttpRequest.BodyPublishers.ofString(body))
                 .build();
 
@@ -106,7 +108,46 @@ public class AiFailureAnalyzer {
             throw new RuntimeException("[AiFailureAnalyzer] API error " + response.statusCode() + ": " + response.body());
         }
 
-        return extractText(response.body());
+        return extractTextGroq(response.body());
+    }
+
+    private static String extractTextGroq(String apiResponse) {
+        String marker = "\"content\":\"";
+        int start = apiResponse.indexOf(marker);
+        if (start < 0) throw new RuntimeException("[AiFailureAnalyzer] Unexpected response: " + apiResponse);
+        start += marker.length();
+
+        StringBuilder result = new StringBuilder();
+        for (int i = start; i < apiResponse.length(); i++) {
+            char c = apiResponse.charAt(i);
+            if (c == '\\' && i + 1 < apiResponse.length()) {
+                char next = apiResponse.charAt(++i);
+                switch (next) {
+                    case '"':
+                        result.append('"');
+                        break;
+                    case 'n':
+                        result.append('\n');
+                        break;
+                    case 'r':
+                        result.append('\r');
+                        break;
+                    case 't':
+                        result.append('\t');
+                        break;
+                    case '\\':
+                        result.append('\\');
+                        break;
+                    default:
+                        result.append(next);
+                }
+            } else if (c == '"') {
+                break;
+            } else {
+                result.append(c);
+            }
+        }
+        return result.toString();
     }
 
     // Walks the JSON character-by-character — no library needed, handles all escape sequences
@@ -122,12 +163,23 @@ public class AiFailureAnalyzer {
             if (c == '\\' && i + 1 < apiResponse.length()) {
                 char next = apiResponse.charAt(++i);
                 switch (next) {
-                    case '"':  result.append('"');  break;
-                    case 'n':  result.append('\n'); break;
-                    case 'r':  result.append('\r'); break;
-                    case 't':  result.append('\t'); break;
-                    case '\\': result.append('\\'); break;
-                    default:   result.append(next);
+                    case '"':
+                        result.append('"');
+                        break;
+                    case 'n':
+                        result.append('\n');
+                        break;
+                    case 'r':
+                        result.append('\r');
+                        break;
+                    case 't':
+                        result.append('\t');
+                        break;
+                    case '\\':
+                        result.append('\\');
+                        break;
+                    default:
+                        result.append(next);
                 }
             } else if (c == '"') {
                 break;
@@ -141,7 +193,7 @@ public class AiFailureAnalyzer {
     // --- Output routing ---
 
     private static String detectEnv() {
-        if (System.getenv("BUILD_NUMBER") != null)                                  return "jenkins";
+        if (System.getenv("BUILD_NUMBER") != null) return "jenkins";
         if (new File("/.dockerenv").exists() || "true".equals(System.getenv("DOCKER_ENV"))) return "docker";
         return "local";
     }
