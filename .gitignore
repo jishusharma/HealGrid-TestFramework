@@ -14,3 +14,10 @@ logs/
 
 allure-results/
 allure-report/
+/blueprints/
+
+# Allure local install
+.allure/
+
+# Intellij classpath file
+/classpath.txt
