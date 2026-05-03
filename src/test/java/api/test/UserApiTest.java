@@ -1,20 +1,34 @@
 package api.test;
 
 import api.base.BaseApiTest;
+import api.service.UserApi;
 import io.qameta.allure.Epic;
 import io.qameta.allure.Feature;
 import io.qameta.allure.Story;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
-import java.util.HashMap;
-import java.util.Map;
+import static io.restassured.module.jsv.JsonSchemaValidator.matchesJsonSchemaInClasspath;
 
-import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.*;
 
 @Epic("API Testing")
 @Feature("User Endpoints")
 public class UserApiTest extends BaseApiTest {
+    private UserApi userApi;
+
+    @BeforeClass
+    @Override
+    public void setup() {
+        super.setup();
+        userApi = new UserApi(requestSpec);
+    }
+
+    @Override
+    protected String getBaseUri() {
+        return "https://jsonplaceholder.typicode.com";
+    }
+
     static final int STATUS_CODE_200 = 200;
     static final int STATUS_CODE_201 = 201;
     static final int STATUS_CODE_404 = 404;
@@ -22,9 +36,7 @@ public class UserApiTest extends BaseApiTest {
     @Story("Get list of users")
     @Test
     public void getUsers_returns200() {
-        given(requestSpec)
-                .when()
-                .get("/users?page=2")
+        userApi.getUsers(2)
                 .then()
                 .statusCode(STATUS_CODE_200);
     }
@@ -32,27 +44,19 @@ public class UserApiTest extends BaseApiTest {
     @Story("Get single user with correct Id")
     @Test
     public void getSingleUser_returnsCorrectId() {
-        given(requestSpec)
-                .when()
-                .get("/users/2")
+        userApi.getUserById(2)
                 .then()
                 .statusCode(STATUS_CODE_200)
                 .body("id", equalTo(2))
                 .body("name", notNullValue())
-                .body("email", notNullValue());
+                .body("email", notNullValue())
+                .body(matchesJsonSchemaInClasspath("schemas/user-schema.json"));
     }
 
     @Story("Create user")
     @Test
     public void createUser_returns201() {
-        Map<String, Object> bodyParams = new HashMap<>();
-        bodyParams.put("name", "Jishu");
-        bodyParams.put("job", "QA Engineer");
-
-        given(requestSpec)
-                .body(bodyParams)
-                .when()
-                .post("/users")
+        userApi.createUser("Jishu", "QA Engineer")
                 .then()
                 .statusCode(STATUS_CODE_201)
                 .body("name", equalTo("Jishu"));
@@ -61,9 +65,7 @@ public class UserApiTest extends BaseApiTest {
     @Story("Verify 404 when user not found")
     @Test
     public void getNonExistentUser_returns404() {
-        given(requestSpec)
-                .when()
-                .get("/users/9999")
+        userApi.getUserById(9999)
                 .then()
                 .statusCode(STATUS_CODE_404);
     }
@@ -71,9 +73,7 @@ public class UserApiTest extends BaseApiTest {
     @Story("Verify threshold response time")
     @Test
     public void getUsers_respondsWithinThreshold() {
-        given(requestSpec)
-                .when()
-                .get("/users?page=2")
+        userApi.getUsers(2)
                 .then()
                 .statusCode(STATUS_CODE_200)
                 .time(lessThan(3000L));

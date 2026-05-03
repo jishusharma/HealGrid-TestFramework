@@ -6,14 +6,16 @@ import io.restassured.http.ContentType;
 import io.restassured.specification.RequestSpecification;
 import org.testng.annotations.BeforeClass;
 
-public class BaseApiTest {
+public abstract class BaseApiTest {
     protected RequestSpecification requestSpec;
+
+    protected abstract String getBaseUri();
 
     @BeforeClass
     public void setup() {
         RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
         requestSpec = new RequestSpecBuilder()
-                .setBaseUri("https://jsonplaceholder.typicode.com")
+                .setBaseUri(getBaseUri())
                 .setContentType(ContentType.JSON)
                 .build();
     }
