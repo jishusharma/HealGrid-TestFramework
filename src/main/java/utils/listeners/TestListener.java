@@ -1,5 +1,6 @@
 package utils.listeners;
 
+import base.BrowserStackSessionContext;
 import base.DriverManager;
 import io.qameta.allure.Attachment;
 import org.apache.logging.log4j.LogManager;
@@ -33,11 +34,16 @@ public class TestListener implements ITestListener {
     @Override
     public void onTestSuccess(ITestResult result) {
         LOGGER.info("*** Executed {} test successfully ***", result.getMethod().getMethodName());
+        attachBrowserStackSessionId();
+        markBrowserStackSession("passed", null);
     }
+
 
     @Override
     public void onTestFailure(ITestResult result) {
         LOGGER.info("*** Test execution {} failed ***", result.getMethod().getMethodName());
+        attachBrowserStackSessionId();
+        markBrowserStackSession("failed", result.getThrowable().getMessage());
         WebDriver driver = DriverManager.getDriver();
         if (driver != null) {
             saveScreenshot(driver);
@@ -46,9 +52,62 @@ public class TestListener implements ITestListener {
         }
     }
 
+    private void markBrowserStackSession(String status, String reason) {
+        String sessionId = BrowserStackSessionContext.getSessionId();
+        if (sessionId == null) return;
+
+        try {
+            String username = System.getenv("BROWSERSTACK_USERNAME");
+            String accessKey = System.getenv("BROWSERSTACK_ACCESS_KEY");
+            String payload = reason != null
+                    ? "{\"status\":\"" + status + "\",\"reason\":\"" + reason + "\"}"
+                    : "{\"status\":\"" + status + "\",\"reason\":\"\"}";
+
+            java.net.URL url = new java.net.URL(
+                    "https://api.browserstack.com/automate/sessions/" + sessionId + ".json");
+            java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("PUT");
+            conn.setDoOutput(true);
+            conn.setRequestProperty("Content-Type", "application/json");
+            String auth = java.util.Base64.getEncoder()
+                    .encodeToString((username + ":" + accessKey).getBytes());
+            conn.setRequestProperty("Authorization", "Basic " + auth);
+            conn.getOutputStream().write(payload.getBytes());
+            conn.getResponseCode();
+        } catch (Exception e) {
+            LOGGER.warn("Failed to mark BrowserStack session status: {}", e.getMessage());
+        }
+    }
+
+    private void attachBrowserStackSessionId() {
+        String sessionId = BrowserStackSessionContext.getSessionId();
+        if (sessionId != null) {
+            saveSessionId(sessionId);
+        }
+    }
+
+    @Attachment(value = "BrowserStack Session ID", type = "text/plain")
+    private String saveSessionId(String sessionId) {
+        return sessionId;
+    }
+
     @Override
     public void onTestSkipped(ITestResult result) {
-        LOGGER.info("*** Test {} skipped ***", result.getMethod().getMethodName());
+        Throwable cause = result.getThrowable();
+        if (cause != null && !(cause instanceof org.testng.SkipException)) {
+            LOGGER.info("*** Test {} failed due to @BeforeMethod failure — overriding status to FAILED ***",
+                    result.getMethod().getMethodName());
+            result.setStatus(ITestResult.FAILURE);
+            WebDriver driver = DriverManager.getDriver();
+            if (driver != null) {
+                saveScreenshot(driver);
+            } else {
+                LOGGER.warn("Driver null during @BeforeMethod failure for test: {}",
+                        result.getMethod().getMethodName());
+            }
+        } else {
+            LOGGER.info("*** Test {} skipped ***", result.getMethod().getMethodName());
+        }
     }
 
     // Allure automatically picks up @Attachment methods and adds the
