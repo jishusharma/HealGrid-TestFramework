@@ -2,6 +2,7 @@
 <suite name="Test Suite" parallel="methods" thread-count="5">
     <listeners>
         <listener class-name="utils.listeners.TestListener"/>
+        <listener class-name="io.qameta.allure.testng.AllureTestNg"/>
     </listeners>
     <test name="Demo QA Tests" parallel="methods" thread-count="5">
         <packages>

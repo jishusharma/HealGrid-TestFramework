@@ -1,6 +1,9 @@
 package implementation;
 
+import base.DriverFactory;
 import interfaces.*;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.openqa.selenium.*;
 import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.support.ui.ExpectedCondition;
@@ -15,22 +18,20 @@ import java.util.function.Supplier;
 
 public class SeleniumActions implements ElementActions, NavigationActions, ScrollActions, AdvancedActions, WaitActions,
         WindowTabActions {
-    private static volatile SeleniumActions instance;
+    private static final ThreadLocal<SeleniumActions> instance = new ThreadLocal<>();
     private final Supplier<WebDriver> driverSupplier;
+    private static final Logger LOGGER = LogManager.getLogger(SeleniumActions.class);
 
     SeleniumActions(Supplier<WebDriver> driverSupplier) {
         this.driverSupplier = driverSupplier;
     }
 
     public static SeleniumActions getInstance(Supplier<WebDriver> driverSupplier) {
-        if (instance == null) {
-            synchronized (SeleniumActions.class) {
-                if (instance == null) {
-                    instance = new SeleniumActions(driverSupplier);
-                }
-            }
+        if (instance.get() == null) {
+            instance.set(new SeleniumActions(driverSupplier));
+            LOGGER.info("SeleniumActions CREATED for thread: {}", Thread.currentThread().getId());
         }
-        return instance;
+        return instance.get();
     }
 
     public WebDriver getDriver() {

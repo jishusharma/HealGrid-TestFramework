@@ -2,6 +2,8 @@ package implementation;
 
 import com.epam.healenium.SelfHealingDriver;
 import interfaces.*;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.openqa.selenium.*;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
@@ -12,6 +14,8 @@ import java.util.function.Supplier;
 public class HealeniumSeleniumActions extends SeleniumActions {
     private final Supplier<WebDriver> driverSupplier;
     private final WebDriverWait wait;
+    private static final ThreadLocal<HealeniumSeleniumActions> instance = new ThreadLocal<>();
+    private static final Logger LOGGER = LogManager.getLogger(HealeniumSeleniumActions.class);
 
     private HealeniumSeleniumActions(Supplier<WebDriver> driverSupplier) {
         super(driverSupplier);
@@ -19,17 +23,12 @@ public class HealeniumSeleniumActions extends SeleniumActions {
         this.wait = new WebDriverWait(driverSupplier.get(), Duration.ofSeconds(10));
     }
 
-    private static volatile HealeniumSeleniumActions instance;
-
     public static HealeniumSeleniumActions getInstance(Supplier<WebDriver> driverSupplier) {
-        if (instance == null) {
-            synchronized (HealeniumSeleniumActions.class) {
-                if (instance == null) {
-                    instance = new HealeniumSeleniumActions(driverSupplier);
-                }
-            }
+        if (instance.get() == null) {
+            instance.set(new HealeniumSeleniumActions(driverSupplier));
+            LOGGER.info("SeleniumActions CREATED for thread: {}", Thread.currentThread().getId());
         }
-        return instance;
+        return instance.get();
     }
 
     @Override

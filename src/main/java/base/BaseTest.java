@@ -9,6 +9,7 @@ import utils.GenericUtil;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Properties;
+import java.lang.reflect.Method;
 
 public class BaseTest {
 
@@ -19,36 +20,37 @@ public class BaseTest {
 
     @BeforeSuite(alwaysRun = true)
     public void setUpSuite() {
+        String execution = System.getProperty("execution", "local");
 
-        String healeniumHost = System.getProperty("healenium.host", "localhost");
-
-        try {
-            URL url = new URL("http://" + healeniumHost + ":7878/healenium/report");
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            conn.setConnectTimeout(2000);
-            conn.setReadTimeout(2000);
-            conn.connect();
-
-            if (conn.getResponseCode() != 200) {
-                throw new RuntimeException("Healenium backend not ready");
+        if (!"browserstack".equalsIgnoreCase(execution)) {
+            String healeniumHost = System.getProperty("healenium.host", "localhost");
+            try {
+                URL url = new URL("http://" + healeniumHost + ":7878/healenium/report");
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                conn.setConnectTimeout(2000);
+                conn.setReadTimeout(2000);
+                conn.connect();
+                if (conn.getResponseCode() != 200) {
+                    throw new RuntimeException("Healenium backend not ready");
+                }
+                LOGGER.info("Healenium backend is reachable.");
+            } catch (Exception e) {
+                throw new RuntimeException("Healenium not reachable", e);
             }
-
-            LOGGER.info("Healenium backend is reachable.");
-
-        } catch (Exception e) {
-            throw new RuntimeException("Healenium not reachable", e);
         }
 
         config = GenericUtil.getPropertiesFile(CONFIG_PROP);
     }
 
+    @Parameters({"browser"})
     @BeforeMethod(alwaysRun = true)
-    public void setUp() {
-        WebDriver driver = DriverFactory.createDriver();
+    public void setUp(@Optional("chrome") String browser, Method method) {
+        WebDriver driver = DriverFactory.createDriver(method.getName(), browser);
         DriverManager.setDriver(driver);
         String name = "T" + Thread.currentThread().getId();
         driverName.set(name);
-        LOGGER.debug("THREAD DRIVER NAME = " + driverName.get());
+        LOGGER.info("Setting up: {} | browser: {} | thread: {}",
+                method.getName(), browser, Thread.currentThread().getId());
         driver.get(config.getProperty("DemoQAMainPageUrl"));
 
         boolean isHeadless = Boolean.parseBoolean(
@@ -61,7 +63,9 @@ public class BaseTest {
     }
 
     @AfterMethod(alwaysRun = true)
-    public void tearDown() {
+    public void tearDown(Method method) {
+        LOGGER.info("Tearing down: {} | thread: {}",
+                method.getName(), Thread.currentThread().getId());
         DriverManager.quitDriver();
     }
 

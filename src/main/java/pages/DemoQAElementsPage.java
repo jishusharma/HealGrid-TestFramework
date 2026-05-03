@@ -24,7 +24,7 @@ public class DemoQAElementsPage extends BasePage {
     @FindBy(css = "#item-0 a")
     private WebElement textBoxMenu;
 
-    @FindBy(xpath = "(//*[@id='item-1'])[1]/a")
+    @FindBy(xpath = "//span[contains(text(),'Check Box')]")
     private WebElement checkBoxMenu;
 
     @FindBy(id = "item-2")
@@ -193,7 +193,7 @@ public class DemoQAElementsPage extends BasePage {
 
     public boolean isCheckBoxSelected(String label) {
         WebElement checkbox = actions.getDriver().findElement(
-                By.cssSelector("span.rc-tree-checkbox[aria-label*='" + label + "']")
+                By.xpath("//span[@role='checkbox' and contains(@aria-label, '" + label + "')]")
         );
         return "true".equals(checkbox.getAttribute("aria-checked"));
     }

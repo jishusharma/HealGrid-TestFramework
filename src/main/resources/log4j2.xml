@@ -2,10 +2,10 @@
 <Configuration status="debug">
     <Properties>
         <Property name="log-path">logs</Property>
+        <Property name="log-name">testRun-${date:yyyy-MM-dd_HH-mm-ss}</Property>
     </Properties>
-
     <Appenders>
-        <RollingFile name="file-log" fileName="${log-path}/testRun.log"
+        <RollingFile name="file-log" fileName="${log-path}/${log-name}.log"
                      filePattern="${log-path}/testRun-%d{yyyy-MM-dd}.log">
             <PatternLayout>
                 <Pattern>%d{ABSOLUTE} %5p [%t] %c - %m%n</Pattern>
@@ -14,21 +14,31 @@
                 <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
             </Policies>
         </RollingFile>
-
-        <!-- Console Appender -->
         <Console name="console" target="SYSTEM_OUT">
             <PatternLayout pattern="%d{ABSOLUTE} %5p [%t] %c - %m%n"/>
         </Console>
     </Appenders>
-
     <Loggers>
-        <!-- Logger for your application classes -->
         <Logger name="tests" level="debug" additivity="false">
             <AppenderRef ref="file-log"/>
             <AppenderRef ref="console"/>
         </Logger>
-
-        <!-- Root logger -->
+        <Logger name="base" level="debug" additivity="false">
+            <AppenderRef ref="file-log"/>
+            <AppenderRef ref="console"/>
+        </Logger>
+        <Logger name="implementation" level="debug" additivity="false">
+            <AppenderRef ref="file-log"/>
+            <AppenderRef ref="console"/>
+        </Logger>
+        <Logger name="utils" level="debug" additivity="false">
+            <AppenderRef ref="file-log"/>
+            <AppenderRef ref="console"/>
+        </Logger>
+        <Logger name="pages" level="debug" additivity="false">
+            <AppenderRef ref="file-log"/>
+            <AppenderRef ref="console"/>
+        </Logger>
         <Root level="info" additivity="false">
             <AppenderRef ref="file-log"/>
             <AppenderRef ref="console"/>
