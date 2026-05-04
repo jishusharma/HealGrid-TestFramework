@@ -36,7 +36,7 @@ pipeline {
                 sh 'docker-compose logs test-runner | tail -50'
                 sh 'docker ps -a | grep test-runner'
                 sh 'mkdir -p target/surefire-reports'
-                sh 'docker cp $(docker-compose ps -q test-runner):/app/target/surefire-reports/. target/surefire-reports/'
+                sh 'docker cp $(docker-compose -f $COMPOSE_FILE ps -q --all test-runner):/app/target/surefire-reports/. target/surefire-reports/'
                 sh 'ls -la target/surefire-reports/'
             }
         }
