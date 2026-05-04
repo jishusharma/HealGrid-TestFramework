@@ -138,63 +138,12 @@ public class AiFailureAnalyzer {
             if (c == '\\' && i + 1 < apiResponse.length()) {
                 char next = apiResponse.charAt(++i);
                 switch (next) {
-                    case '"':
-                        result.append('"');
-                        break;
-                    case 'n':
-                        result.append('\n');
-                        break;
-                    case 'r':
-                        result.append('\r');
-                        break;
-                    case 't':
-                        result.append('\t');
-                        break;
-                    case '\\':
-                        result.append('\\');
-                        break;
-                    default:
-                        result.append(next);
-                }
-            } else if (c == '"') {
-                break;
-            } else {
-                result.append(c);
-            }
-        }
-        return result.toString();
-    }
-
-    // Walks the JSON character-by-character — no library needed, handles all escape sequences
-    private static String extractText(String apiResponse) {
-        String marker = "\"text\":\"";
-        int start = apiResponse.indexOf(marker);
-        if (start < 0) throw new RuntimeException("[AiFailureAnalyzer] Unexpected response: " + apiResponse);
-        start += marker.length();
-
-        StringBuilder result = new StringBuilder();
-        for (int i = start; i < apiResponse.length(); i++) {
-            char c = apiResponse.charAt(i);
-            if (c == '\\' && i + 1 < apiResponse.length()) {
-                char next = apiResponse.charAt(++i);
-                switch (next) {
-                    case '"':
-                        result.append('"');
-                        break;
-                    case 'n':
-                        result.append('\n');
-                        break;
-                    case 'r':
-                        result.append('\r');
-                        break;
-                    case 't':
-                        result.append('\t');
-                        break;
-                    case '\\':
-                        result.append('\\');
-                        break;
-                    default:
-                        result.append(next);
+                    case '"': result.append('"'); break;
+                    case 'n': result.append('\n'); break;
+                    case 'r': result.append('\r'); break;
+                    case 't': result.append('\t'); break;
+                    case '\\': result.append('\\'); break;
+                    default: result.append(next);
                 }
             } else if (c == '"') {
                 break;
@@ -218,8 +167,12 @@ public class AiFailureAnalyzer {
         System.out.println("[AiFailureAnalyzer] Result:\n" + json);
 
         if ("docker".equals(env) || "jenkins".equals(env)) {
+            String cleaned = json
+                    .replaceAll("(?s)```json\\s*", "")
+                    .replaceAll("(?s)```\\s*", "")
+                    .trim();
             Files.createDirectories(Path.of("target"));
-            Files.writeString(Path.of(OUTPUT), json);
+            Files.writeString(Path.of(OUTPUT), cleaned);
             System.out.println("[AiFailureAnalyzer] Written to: " + OUTPUT);
         }
     }
