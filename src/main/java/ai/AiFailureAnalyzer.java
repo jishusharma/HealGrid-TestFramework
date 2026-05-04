@@ -54,6 +54,9 @@ public class AiFailureAnalyzer {
 
         for (File xml : xmlFiles) {
             Document doc = builder.parse(xml);
+            if (xml.getName().contains("IntentionalFailure")) {
+                System.out.println("[AiFailureAnalyzer] DEBUG " + xml.getName() + " failures=" + doc.getDocumentElement().getAttribute("failures"));
+            }
             NodeList testcases = doc.getElementsByTagName("testcase");
 
             for (int i = 0; i < testcases.getLength(); i++) {
