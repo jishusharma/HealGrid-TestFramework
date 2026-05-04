@@ -25,6 +25,7 @@ pipeline {
                 withCredentials([string(credentialsId: 'REQRES_API_KEY', variable: 'REQRES_API_KEY')]) {
                     sh 'mvn test -Dsurefire.suiteXmlFiles=testNgXmls/api.xml'
                 }
+                sh 'cp target/surefire-reports/TEST-TestSuite.xml target/surefire-reports/TEST-API-TestSuite.xml'
             }
         }
         stage('Test') {
