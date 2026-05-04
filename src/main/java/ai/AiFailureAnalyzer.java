@@ -32,7 +32,6 @@ public class AiFailureAnalyzer {
         }
 
         System.out.println("[AiFailureAnalyzer] " + failures.size() + " failure(s) found. Calling Claude API...");
-
         String systemPrompt = Files.readString(Path.of(PROMPT)).strip();
         String userMessage = buildUserMessage(failures);
         String result = callClaudeApi(apiKey, systemPrompt, userMessage);
@@ -45,6 +44,7 @@ public class AiFailureAnalyzer {
     private static List<String> parseFailures() throws Exception {
         List<String> failures = new ArrayList<>();
         File dir = new File(SUREFIRE);
+        System.out.println("[AiFailureAnalyzer] Dir exists: " + dir.exists() + ", files: " + (dir.listFiles() == null ? "null" : dir.listFiles().length));
         File[] xmlFiles = dir.listFiles((d, n) -> n.startsWith("TEST-") && n.endsWith(".xml"));
         if (xmlFiles == null) return failures;
 
