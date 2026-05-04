@@ -42,7 +42,7 @@ pipeline {
                 withCredentials([string(credentialsId: 'GROQ_API_KEY', variable: 'CLAUDE_API_KEY')]) {
                     sh 'ls -la target/surefire-reports/TEST-*.xml || echo "No TEST- xml files found"'
                     sh 'cat target/surefire-reports/TEST-TestSuite.xml || echo "File not found"'
-                    sh 'mvn exec:java -Dexec.mainClass=ai.AiFailureAnalyzer'
+                    sh 'mvn exec:java -Dexec.mainClass=ai.AiFailureAnalyzer -Dexec.classpathScope=runtime -Dfork=true'
                 }
                 script {
                     if (fileExists('target/ai-failure-report.json')) {
