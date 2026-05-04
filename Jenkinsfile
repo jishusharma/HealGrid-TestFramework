@@ -1,3 +1,12 @@
+@NonCPS
+def parseRerunTests(String reportText) {
+    def json = new groovy.json.JsonSlurper().parseText(reportText)
+    return json.clusters
+        .findAll { it.decision == 'RERUN' }
+        .collectMany { it.tests }
+        .unique()
+        .join(',')
+}
 pipeline {
     agent any
     environment {
@@ -65,13 +74,7 @@ pipeline {
                 script {
                     if (fileExists('target/ai-failure-report.json')) {
                         def report = readFile('target/ai-failure-report.json')
-                        def json = new groovy.json.JsonSlurperClassic().parseText(report)
-                        def rerunTests = json.clusters
-                            .findAll { it.decision == 'RERUN' }
-                            .collectMany { it.tests }
-                            .unique()
-                            .join(',')
-
+                        def rerunTests = parseRerunTests(report)
                         if (rerunTests) {
                             echo "Rerunning RERUN-tagged tests: ${rerunTests}"
                             sh "mvn test -Dtest=${rerunTests} -DfailIfNoTests=false"
