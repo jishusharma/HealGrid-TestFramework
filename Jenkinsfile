@@ -22,7 +22,9 @@ pipeline {
         stage('API Tests') {
             steps {
                 echo 'Running REST Assured API tests...'
-                sh 'mvn test -Dsurefire.suiteXmlFiles=testNgXmls/api.xml'
+                withCredentials([string(credentialsId: 'REQRES_API_KEY', variable: 'REQRES_API_KEY')]) {
+                    sh 'mvn test -Dsurefire.suiteXmlFiles=testNgXmls/api.xml'
+                }
             }
         }
         stage('Test') {
