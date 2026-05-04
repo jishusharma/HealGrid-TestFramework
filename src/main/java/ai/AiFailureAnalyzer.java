@@ -12,7 +12,7 @@ import java.util.*;
 public class AiFailureAnalyzer {
 
     private static final String API_URL = "https://api.groq.com/openai/v1/chat/completions";
-    private static final String MODEL = "llama-3.1-8b-instant";
+    private static final String MODEL = "llama-3.3-70b-versatile";
     private static final String SUREFIRE = "target/surefire-reports/junitreports";
     private static final String PROMPT = "src/test/resources/ai_prompts/failure-analysis-prompt.txt";
     private static final String OUTPUT = "target/ai-failure-report.json";
@@ -68,7 +68,7 @@ public class AiFailureAnalyzer {
                 String message = el.getAttribute("message");
                 String type = el.getAttribute("type");
                 String[] lines = el.getTextContent().trim().split("\n");
-                String trace = String.join("\n", Arrays.copyOfRange(lines, 0, Math.min(5, lines.length)));
+                String trace = String.join("\n", Arrays.copyOfRange(lines, 0, Math.min(2, lines.length)));
 
                 failures.add(className + "#" + methodName + " | " + type + ": " + message + "\n" + trace);
             }
