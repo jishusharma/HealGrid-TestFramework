@@ -13,7 +13,7 @@ public class AiFailureAnalyzer {
 
     private static final String API_URL = "https://api.groq.com/openai/v1/chat/completions";
     private static final String MODEL = "llama-3.1-8b-instant";
-    private static final String SUREFIRE = "target/surefire-reports";
+    private static final String SUREFIRE = "target/surefire-reports/junitreports";
     private static final String PROMPT = "src/test/resources/ai_prompts/failure-analysis-prompt.txt";
     private static final String OUTPUT = "target/ai-failure-report.json";
 
