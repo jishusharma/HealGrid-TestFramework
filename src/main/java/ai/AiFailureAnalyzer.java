@@ -43,9 +43,11 @@ public class AiFailureAnalyzer {
 
     private static List<String> parseFailures() throws Exception {
         List<String> failures = new ArrayList<>();
-        File dir = new File(SUREFIRE);
+        File dir = new File("target/surefire-reports");
         System.out.println("[AiFailureAnalyzer] Dir exists: " + dir.exists() + ", files: " + (dir.listFiles() == null ? "null" : dir.listFiles().length));
-        File[] xmlFiles = dir.listFiles((d, n) -> n.startsWith("TEST-") && n.endsWith(".xml"));
+        List<File> xmlFileList = new ArrayList<>();
+        collectXmlFiles(dir, xmlFileList);
+        File[] xmlFiles = xmlFileList.toArray(new File[0]);
         if (xmlFiles == null) return failures;
 
         DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
@@ -74,6 +76,15 @@ public class AiFailureAnalyzer {
             }
         }
         return failures;
+    }
+
+    private static void collectXmlFiles(File dir, List<File> result) {
+        File[] files = dir.listFiles();
+        if (files == null) return;
+        for (File f : files) {
+            if (f.isDirectory()) collectXmlFiles(f, result);
+            else if (f.getName().startsWith("TEST-") && f.getName().endsWith(".xml")) result.add(f);
+        }
     }
 
     // --- Prompt construction ---
