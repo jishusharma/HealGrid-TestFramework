@@ -18,6 +18,7 @@ public class AiFailureAnalyzer {
     private static final String OUTPUT = "target/ai-failure-report.json";
 
     public static void main(String[] args) throws Exception {
+        System.out.println("[AiFailureAnalyzer] Scanning path: " + new File(SUREFIRE).getAbsolutePath());
         String apiKey = System.getenv("CLAUDE_API_KEY");
         if (apiKey == null || apiKey.isBlank()) {
             System.out.println("[AiFailureAnalyzer] CLAUDE_API_KEY not set. Skipping.");
