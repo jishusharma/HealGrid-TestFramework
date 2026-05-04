@@ -44,6 +44,7 @@ pipeline {
                     sh 'ls -la target/surefire-reports/TEST-*.xml || echo "No TEST- xml files found"'
                     sh 'cat target/surefire-reports/TEST-TestSuite.xml || echo "File not found"'
                     sh 'find target/surefire-reports/ -name "TEST-*.xml" | xargs grep -l "failures=" || echo "No TEST xml files found"'
+                    sh 'find target/surefire-reports/ -name "*.xml" | head -20'
                     sh 'mvn exec:java -Dexec.mainClass=ai.AiFailureAnalyzer -Dexec.classpathScope=runtime -Dfork=true'
                 }
                 script {
