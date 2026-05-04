@@ -86,6 +86,9 @@
       - maven_repo:/root/.m2
     networks:
       - healenium
+    command: >
+      bash -c "mkdir -p /app/target/surefire-reports/junitreports &&
+      mvn test -Dheadless=true -Dhealenium.host=healenium -Dexecution=grid -Dgrid.url=http://selenium-hub:4444 -Dsurefire.suiteXmlFiles=testNgXmls/docker.xml"
 
   selenium-hub:
     image: selenium/hub:4.21.0
