@@ -65,10 +65,11 @@ pipeline {
                 script {
                     if (fileExists('target/ai-failure-report.json')) {
                         def report = readFile('target/ai-failure-report.json')
-                        def json = new groovy.json.JsonSlurper().parseText(report)
+                        def json = new groovy.json.JsonSlurperClassic().parseText(report)
                         def rerunTests = json.clusters
                             .findAll { it.decision == 'RERUN' }
                             .collectMany { it.tests }
+                            .unique()
                             .join(',')
 
                         if (rerunTests) {
