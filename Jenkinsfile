@@ -64,19 +64,12 @@ pipeline {
             steps {
                 script {
                     if (fileExists('target/ai-failure-report.json')) {
-                        def rerunTests = sh(
-                            script: '''python3 -c "
-import json
-with open('target/ai-failure-report.json') as f:
-    data = json.load(f)
-tests = []
-for c in data.get('clusters', []):
-    if c.get('decision') == 'RERUN':
-        tests.extend(c.get('tests', []))
-print(','.join(tests))
-"''',
-                            returnStdout: true
-                        ).trim()
+                        def report = readFile('target/ai-failure-report.json')
+                        def json = new groovy.json.JsonSlurper().parseText(report)
+                        def rerunTests = json.clusters
+                            .findAll { it.decision == 'RERUN' }
+                            .collectMany { it.tests }
+                            .join(',')
 
                         if (rerunTests) {
                             echo "Rerunning RERUN-tagged tests: ${rerunTests}"
