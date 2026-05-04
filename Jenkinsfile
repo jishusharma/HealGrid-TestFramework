@@ -35,7 +35,9 @@ pipeline {
                 sh 'docker-compose -f $COMPOSE_FILE up --build --abort-on-container-exit postgres-db healenium selector-imitator selenium-hub chrome firefox test-runner'
                 sh 'docker-compose logs test-runner | tail -50'
                 sh 'docker ps -a | grep test-runner'
-                sh 'ls -la ./target/surefire-reports/'
+                sh 'mkdir -p target/surefire-reports'
+                sh 'docker cp $(docker-compose ps -q test-runner):/app/target/surefire-reports/. target/surefire-reports/'
+                sh 'ls -la target/surefire-reports/'
             }
         }
         stage('AI Failure Analysis') {

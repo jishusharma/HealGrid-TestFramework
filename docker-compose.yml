@@ -80,7 +80,6 @@
       selenium-hub:
         condition: service_healthy
     volumes:
-      - ./target/surefire-reports:/app/target/surefire-reports
       - ./target/allure-results:/app/target/allure-results
       - ./logs:/app/logs
       - maven_repo:/root/.m2
