@@ -8,6 +8,7 @@
         <classes>
             <class name="tests.DemoQAMainPageTest"/>
             <class name="tests.DemoQAElementsPageTest"/>
+            <class name="api.test.IntentionalFailureTest"/>
         </classes>
     </test>
 </suite>
