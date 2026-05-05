@@ -44,7 +44,6 @@ public class AiFailureAnalyzer {
     private static List<String> parseFailures() throws Exception {
         List<String> failures = new ArrayList<>();
         File dir = new File("target/surefire-reports");
-        System.out.println("[AiFailureAnalyzer] Dir exists: " + dir.exists() + ", files: " + (dir.listFiles() == null ? "null" : dir.listFiles().length));
         List<File> xmlFileList = new ArrayList<>();
         collectXmlFiles(dir, xmlFileList);
         File[] xmlFiles = xmlFileList.toArray(new File[0]);
@@ -54,9 +53,6 @@ public class AiFailureAnalyzer {
 
         for (File xml : xmlFiles) {
             Document doc = builder.parse(xml);
-            if (xml.getName().contains("IntentionalFailure")) {
-                System.out.println("[AiFailureAnalyzer] DEBUG " + xml.getName() + " failures=" + doc.getDocumentElement().getAttribute("failures"));
-            }
             NodeList testcases = doc.getElementsByTagName("testcase");
 
             for (int i = 0; i < testcases.getLength(); i++) {
