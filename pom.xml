@@ -65,11 +65,13 @@
             <groupId>org.apache.poi</groupId>
             <artifactId>poi</artifactId>
             <version>5.2.3</version>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.apache.poi</groupId>
             <artifactId>poi-ooxml</artifactId>
             <version>5.2.3</version>
+            <optional>true</optional>
         </dependency>
 
         <!-- Apache Commons IO -->
@@ -90,6 +92,7 @@
         <dependency>
             <groupId>org.openpnp</groupId>
             <artifactId>opencv</artifactId>
+            <optional>true</optional>
             <version>4.7.0-0</version>
         </dependency>
 
@@ -98,6 +101,7 @@
             <groupId>net.sourceforge.tess4j</groupId>
             <artifactId>tess4j</artifactId>
             <version>5.4.0</version>
+            <optional>true</optional>
         </dependency>
 
         <!-- Lombok -->
@@ -121,6 +125,7 @@
             <groupId>com.epam.healenium</groupId>
             <artifactId>healenium-web</artifactId>
             <version>3.5.1</version>
+            <optional>true</optional>
         </dependency>
 
         <!-- Guice -->
@@ -135,6 +140,7 @@
             <groupId>org.jsoup</groupId>
             <artifactId>jsoup</artifactId>
             <version>1.16.1</version>
+            <optional>true</optional>
         </dependency>
 
         <!-- REST Assured -->

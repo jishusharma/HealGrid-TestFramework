@@ -21,10 +21,8 @@ public class OpenCVUtil implements AIUtil {
             System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
         } catch (UnsatisfiedLinkError e) {
             String libraryPath = System.getProperty("java.library.path");
-            System.err.println("Native library path: " + libraryPath);
-            System.err.println("Trying to load library: " + Core.NATIVE_LIBRARY_NAME);
-            e.printStackTrace();
-            System.exit(1);
+            LOGGER.error("Failed to load OpenCV native library. Library path: {}", libraryPath, e);
+            throw new RuntimeException("OpenCV native library could not be loaded: " + Core.NATIVE_LIBRARY_NAME, e);
         }
     }
 

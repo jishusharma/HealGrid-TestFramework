@@ -15,7 +15,6 @@ public class BaseTest {
     protected static Properties config;
     protected static final String CONFIG_PROP = "config.properties";
     protected static final Logger LOGGER = LogManager.getLogger(BaseTest.class);
-    private ThreadLocal<String> driverName = new ThreadLocal<>();
 
     @BeforeSuite(alwaysRun = true)
     public void setUpSuite() {
@@ -48,12 +47,8 @@ public class BaseTest {
     public void setUp(@Optional("chrome") String browser, Method method) {
         WebDriver driver = DriverFactory.createDriver(method.getName(), browser);
         DriverManager.setDriver(driver);
-
-        String name = "T" + Thread.currentThread().getId();
-        driverName.set(name);
         LOGGER.info("Setting up: {} | browser: {} | thread: {}",
                 method.getName(), browser, Thread.currentThread().getId());
-
         boolean isHeadless = Boolean.parseBoolean(System.getProperty("headless", "false"));
         if (!isHeadless) {
             driver.manage().window().maximize();
@@ -65,9 +60,6 @@ public class BaseTest {
         LOGGER.info("Tearing down: {} | thread: {}",
                 method.getName(), Thread.currentThread().getId());
         DriverManager.quitDriver();
-    }
-
-    public String getDriverName() {
-        return driverName.get();
+        BrowserStackSessionContext.clear();
     }
 }
