@@ -174,7 +174,6 @@
                     <includes>
                         <include>**/tests/*Test.java</include>
                     </includes>
-                    <testFailureIgnore>false</testFailureIgnore>
                     <!-- aspectjweaver agent: required for Allure @Step/@Attachment -->
                     <argLine>
                         -javaagent:"${settings.localRepository}/org/aspectj/aspectjweaver/${aspectj.version}/aspectjweaver-${aspectj.version}.jar"
