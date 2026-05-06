@@ -40,9 +40,9 @@ pipeline {
                     withCredentials([string(credentialsId: 'BROWSERSTACK_USERNAME', variable: 'BROWSERSTACK_USERNAME'),
                                      string(credentialsId: 'BROWSERSTACK_ACCESS_KEY', variable: 'BROWSERSTACK_ACCESS_KEY')]) {
                         echo 'Running mobile Android tests on BrowserStack...'
-                        sh 'mvn test -Dsurefire.suiteXmlFiles=testNgXmls/mobile.xml -Dexecution=browserstack -Dbs.device="Samsung Galaxy S23" -Dbs.os.version=13.0'
+                        sh 'mvn test -Dsurefire.suiteXmlFiles=testNgXmls/mobile.xml -Dbs.device="Samsung Galaxy S23" -Dbs.os.version=13.0'
                         echo 'Running mobile iOS tests on BrowserStack...'
-                        sh 'mvn test -Dsurefire.suiteXmlFiles=testNgXmls/mobile_ios.xml -Dexecution=browserstack -Dbs.device="iPhone 14" -Dbs.os.version=16'
+                        sh 'mvn test -Dsurefire.suiteXmlFiles=testNgXmls/mobile_ios.xml -Dbs.device="iPhone 14" -Dbs.os.version=16'
                     }
                 }
             }
