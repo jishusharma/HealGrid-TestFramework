@@ -16,8 +16,13 @@ public class DriverManager {
 
     public static void quitDriver() {
         if (driver.get() != null) {
-            driver.get().quit();
-            driver.remove();
+            try {
+                driver.get().quit();
+            } catch (Exception e) {
+                // driver.quit() timed out — process will be cleaned up by OS
+            } finally {
+                driver.remove();
+            }
         }
     }
 }
