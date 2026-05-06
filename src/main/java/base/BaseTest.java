@@ -50,7 +50,9 @@ public class BaseTest {
         LOGGER.info("Setting up: {} | browser: {} | thread: {}",
                 method.getName(), browser, Thread.currentThread().getId());
         boolean isHeadless = Boolean.parseBoolean(System.getProperty("headless", "false"));
-        if (!isHeadless) {
+        boolean isMobile = browser != null && (browser.equalsIgnoreCase("mobile_android")
+                || browser.equalsIgnoreCase("mobile_ios"));
+        if (!isHeadless && !isMobile) {
             driver.manage().window().maximize();
         }
     }

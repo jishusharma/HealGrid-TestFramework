@@ -11,7 +11,6 @@ import org.openqa.selenium.firefox.FirefoxDriver;
 import org.openqa.selenium.firefox.FirefoxOptions;
 import org.openqa.selenium.remote.RemoteWebDriver;
 import utils.GenericUtil;
-import utils.listeners.TestListener;
 
 import java.net.URL;
 import java.time.Instant;
@@ -27,25 +26,21 @@ public class DriverFactory {
     }
 
     public static WebDriver createDriver(String sessionName) {
-        String execution = getConfigValue("execution", "local");
-
-        if ("browserstack".equalsIgnoreCase(execution)) {
-            return createBrowserStackDriver(sessionName);
-        }
-
         String browser = getConfigValue("browser", "chrome");
-        WebDriver driver = "grid".equalsIgnoreCase(execution)
-                ? createRemoteDriver(browser)
-                : createLocalDriver(browser);
-        boolean healEnabled = Boolean.parseBoolean(getConfigValue("heal.enabled", "true"));
-        return healEnabled ? HealeniumWebDriverFactory.wrapDriver(driver) : driver;
+        return createDriver(sessionName, browser);
     }
 
     public static WebDriver createDriver(String sessionName, String browser) {
+        // Mobile always uses BrowserStack — detect from browser parameter
+        if (browser != null && (browser.equalsIgnoreCase("mobile_android")
+                || browser.equalsIgnoreCase("mobile_ios"))) {
+            return createMobileDriver(sessionName, browser);
+        }
+
         String execution = getConfigValue("execution", "local");
 
         if ("browserstack".equalsIgnoreCase(execution)) {
-            return createBrowserStackDriver(sessionName);
+            return createBrowserStackDriver(sessionName, browser);
         }
 
         WebDriver driver = "grid".equalsIgnoreCase(execution)
@@ -55,7 +50,64 @@ public class DriverFactory {
         return healEnabled ? HealeniumWebDriverFactory.wrapDriver(driver) : driver;
     }
 
-    private static WebDriver createBrowserStackDriver(String sessionName) {
+    private static WebDriver createMobileDriver(String sessionName, String browser) {
+        String username = getConfigValue("BROWSERSTACK_USERNAME", null);
+        String accessKey = getConfigValue("BROWSERSTACK_ACCESS_KEY", null);
+
+        if (username == null || username.isEmpty()) {
+            throw new RuntimeException("BROWSERSTACK_USERNAME is not set. Set env var or Jenkins credential.");
+        }
+        if (accessKey == null || accessKey.isEmpty()) {
+            throw new RuntimeException("BROWSERSTACK_ACCESS_KEY is not set. Set env var or Jenkins credential.");
+        }
+
+        MutableCapabilities bstackOptions = new MutableCapabilities();
+        bstackOptions.setCapability("userName", username);
+        bstackOptions.setCapability("accessKey", accessKey);
+        bstackOptions.setCapability("buildName", BUILD_NAME);
+        bstackOptions.setCapability("sessionName", sessionName);
+        bstackOptions.setCapability("projectName",
+                getConfigValue("project.name", "HealGrid-TestFramework"));
+        bstackOptions.setCapability("realMobile", "true");
+
+        MutableCapabilities browserCaps;
+
+        if ("mobile_ios".equalsIgnoreCase(browser)) {
+            bstackOptions.setCapability("deviceName",
+                    getConfigValue("bs.device", "iPhone 14"));
+            bstackOptions.setCapability("osVersion",
+                    getConfigValue("bs.os.version", "16"));
+            browserCaps = new MutableCapabilities();
+            browserCaps.setCapability("browserName", "Safari");
+            LOGGER.info("Creating mobile iOS driver: device={}, osVersion={}",
+                    bstackOptions.getCapability("deviceName"),
+                    bstackOptions.getCapability("osVersion"));
+        } else {
+            // mobile_android (default)
+            bstackOptions.setCapability("deviceName",
+                    getConfigValue("bs.device", "Samsung Galaxy S23"));
+            bstackOptions.setCapability("osVersion",
+                    getConfigValue("bs.os.version", "13.0"));
+            browserCaps = new ChromeOptions();
+            LOGGER.info("Creating mobile Android driver: device={}, osVersion={}",
+                    bstackOptions.getCapability("deviceName"),
+                    bstackOptions.getCapability("osVersion"));
+        }
+
+        browserCaps.setCapability("bstack:options", bstackOptions);
+
+        try {
+            URL hubUrl = new URL("https://hub.browserstack.com/wd/hub");
+            RemoteWebDriver remoteDriver = new RemoteWebDriver(hubUrl, browserCaps);
+            BrowserStackSessionContext.setSessionId(remoteDriver.getSessionId().toString());
+            LOGGER.info("Mobile driver created, session: {}", remoteDriver.getSessionId());
+            return remoteDriver;
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to create mobile RemoteWebDriver", e);
+        }
+    }
+
+    private static WebDriver createBrowserStackDriver(String sessionName, String browser) {
         String username = getConfigValue("BROWSERSTACK_USERNAME", null);
         String accessKey = getConfigValue("BROWSERSTACK_ACCESS_KEY", null);
 
@@ -74,10 +126,12 @@ public class DriverFactory {
         bstackOptions.setCapability("projectName",
                 getConfigValue("project.name", "HealGrid-TestFramework"));
 
-        String browser = getConfigValue("browser", "chrome");
+        String effectiveBrowser = (browser != null && !browser.isEmpty())
+                ? browser
+                : getConfigValue("browser", "chrome");
         MutableCapabilities browserCaps;
 
-        switch (browser.toLowerCase()) {
+        switch (effectiveBrowser.toLowerCase()) {
             case "firefox":
                 browserCaps = new FirefoxOptions();
                 break;

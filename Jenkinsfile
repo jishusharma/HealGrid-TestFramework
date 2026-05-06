@@ -1,12 +1,3 @@
-@NonCPS
-def parseRerunTests(String reportText) {
-    def json = new groovy.json.JsonSlurper().parseText(reportText)
-    return json.clusters
-        .findAll { it.decision == 'RERUN' }
-        .collectMany { it.tests }
-        .unique()
-        .join(',')
-}
 pipeline {
     agent any
     environment {
@@ -14,6 +5,9 @@ pipeline {
     }
     triggers {
         githubPush()
+    }
+    parameters {
+        booleanParam(name: 'RUN_MOBILE', defaultValue: false, description: 'Run mobile tests on BrowserStack')
     }
     stages {
         stage('Checkout') {
@@ -37,12 +31,29 @@ pipeline {
                 sh 'cp target/surefire-reports/TEST-TestSuite.xml target/surefire-reports/TEST-API-TestSuite.xml'
             }
         }
+        stage('Mobile Tests') {
+            when {
+                expression { params.RUN_MOBILE }
+            }
+            steps {
+                script {
+                    withCredentials([string(credentialsId: 'BROWSERSTACK_USERNAME', variable: 'BROWSERSTACK_USERNAME'),
+                                     string(credentialsId: 'BROWSERSTACK_ACCESS_KEY', variable: 'BROWSERSTACK_ACCESS_KEY')]) {
+                        echo 'Running mobile Android tests on BrowserStack...'
+                        sh 'mvn test -Dsurefire.suiteXmlFiles=testNgXmls/mobile.xml -Dbs.device="Samsung Galaxy S23" -Dbs.os.version=13.0'
+                        echo 'Running mobile iOS tests on BrowserStack...'
+                        sh 'mvn test -Dsurefire.suiteXmlFiles=testNgXmls/mobile_ios.xml -Dbs.device="iPhone 14" -Dbs.os.version=16'
+                    }
+                }
+            }
+        }
         stage('Test') {
             steps {
                 echo 'Starting Grid + Healenium + Running tests...'
                 sh 'mkdir -p target/surefire-reports/junitreports'
                 sh 'docker-compose -f $COMPOSE_FILE up --build --abort-on-container-exit postgres-db healenium selector-imitator selenium-hub chrome firefox test-runner'
                 sh 'docker cp $(docker-compose -f $COMPOSE_FILE ps -q --all test-runner):/app/target/surefire-reports/. target/surefire-reports/'
+                sh 'ls -la target/surefire-reports/'
             }
         }
         stage('AI Failure Analysis') {
