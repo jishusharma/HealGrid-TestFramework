@@ -12,7 +12,6 @@ import java.util.Properties;
 import java.lang.reflect.Method;
 
 public class BaseTest {
-
     protected static Properties config;
     protected static final String CONFIG_PROP = "config.properties";
     protected static final Logger LOGGER = LogManager.getLogger(BaseTest.class);
@@ -20,9 +19,13 @@ public class BaseTest {
 
     @BeforeSuite(alwaysRun = true)
     public void setUpSuite() {
-        String execution = System.getProperty("execution", "local");
+        config = GenericUtil.getPropertiesFile(CONFIG_PROP);
 
-        if (!"browserstack".equalsIgnoreCase(execution)) {
+        String execution = System.getProperty("execution", "local");
+        boolean healEnabled = Boolean.parseBoolean(
+                System.getProperty("heal.enabled", config.getProperty("heal.enabled", "true")));
+
+        if (!"browserstack".equalsIgnoreCase(execution) && healEnabled) {
             String healeniumHost = System.getProperty("healenium.host", "localhost");
             try {
                 URL url = new URL("http://" + healeniumHost + ":7878/healenium/report");
@@ -38,8 +41,6 @@ public class BaseTest {
                 throw new RuntimeException("Healenium not reachable", e);
             }
         }
-
-        config = GenericUtil.getPropertiesFile(CONFIG_PROP);
     }
 
     @Parameters({"browser"})
@@ -47,16 +48,13 @@ public class BaseTest {
     public void setUp(@Optional("chrome") String browser, Method method) {
         WebDriver driver = DriverFactory.createDriver(method.getName(), browser);
         DriverManager.setDriver(driver);
+
         String name = "T" + Thread.currentThread().getId();
         driverName.set(name);
         LOGGER.info("Setting up: {} | browser: {} | thread: {}",
                 method.getName(), browser, Thread.currentThread().getId());
-        driver.get(config.getProperty("DemoQAMainPageUrl"));
 
-        boolean isHeadless = Boolean.parseBoolean(
-                System.getProperty("headless", "false")
-        );
-
+        boolean isHeadless = Boolean.parseBoolean(System.getProperty("headless", "false"));
         if (!isHeadless) {
             driver.manage().window().maximize();
         }

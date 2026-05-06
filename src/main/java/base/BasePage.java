@@ -11,7 +11,6 @@ import utils.WaitHelper;
 import java.util.function.Supplier;
 
 public abstract class BasePage {
-
     protected static final Logger LOGGER = LogManager.getLogger(BasePage.class);
     protected final Supplier<WebDriver> driverSupplier;
     protected final SeleniumActions actions;
@@ -19,6 +18,13 @@ public abstract class BasePage {
     public BasePage(Supplier<WebDriver> driverSupplier) {
         this.driverSupplier = driverSupplier;
         this.actions = SeleniumActions.getInstance(driverSupplier);
+        initializePage();
+    }
+
+    public BasePage(Supplier<WebDriver> driverSupplier, String url) {
+        this.driverSupplier = driverSupplier;
+        this.actions = SeleniumActions.getInstance(driverSupplier);
+        driverSupplier.get().get(url);
         initializePage();
     }
 

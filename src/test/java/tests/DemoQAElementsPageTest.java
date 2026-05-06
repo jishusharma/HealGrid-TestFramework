@@ -6,14 +6,14 @@ import org.testng.Assert;
 import pages.DemoQAElementsPage;
 import base.BaseTest;
 import implementation.HealeniumSeleniumActions;
+import pages.DemoQAMainPage;
 
 public class DemoQAElementsPageTest extends BaseTest {
 
     @Test(description = "Verify Text Box functionality")
     public void verifyTextBox() {
-        DemoQAElementsPage elementsPage = new DemoQAElementsPage(() ->
-                HealeniumSeleniumActions.getInstance(DriverManager::getDriver).getDriver());
-        elementsPage.navigateToElementsPage();
+        DemoQAMainPage mainPage = new DemoQAMainPage(DriverManager::getDriver);
+        DemoQAElementsPage elementsPage = mainPage.clickElementsCard();
         elementsPage.navigateToTextBox();
         String fullName = "Full Name Here";
         String email = "name@example.com";
@@ -35,9 +35,8 @@ public class DemoQAElementsPageTest extends BaseTest {
         String HOME = "Home";
         String DOWNLOADS = "Downloads";
         String DESKTOP = "Desktop";
-        DemoQAElementsPage elementsPage = new DemoQAElementsPage(() ->
-                HealeniumSeleniumActions.getInstance(DriverManager::getDriver).getDriver());
-        elementsPage.navigateToElementsPage();
+        DemoQAMainPage mainPage = new DemoQAMainPage(DriverManager::getDriver);
+        DemoQAElementsPage elementsPage = mainPage.clickElementsCard();
         elementsPage.navigateToCheckBox();
         elementsPage.expandAllCheckBoxes();
         elementsPage.selectCheckBox(HOME);
@@ -49,9 +48,8 @@ public class DemoQAElementsPageTest extends BaseTest {
 
     @Test(description = "Verify Radio Button functionality")
     public void verifyRadioButton() {
-        DemoQAElementsPage elementsPage = new DemoQAElementsPage(() ->
-                HealeniumSeleniumActions.getInstance(DriverManager::getDriver).getDriver());
-        elementsPage.navigateToElementsPage();
+        DemoQAMainPage mainPage = new DemoQAMainPage(DriverManager::getDriver);
+        DemoQAElementsPage elementsPage = mainPage.clickElementsCard();
         elementsPage.navigateToRadioButton();
         elementsPage.selectRadioButton("Impressive");
         Assert.assertTrue(elementsPage.isRadioButtonSelected("Impressive"),
@@ -62,9 +60,8 @@ public class DemoQAElementsPageTest extends BaseTest {
 
     @Test(description = "Verify Web Tables functionality")
     public void verifyWebTables() {
-        DemoQAElementsPage elementsPage = new DemoQAElementsPage(() ->
-                HealeniumSeleniumActions.getInstance(DriverManager::getDriver).getDriver());
-        elementsPage.navigateToElementsPage();
+        DemoQAMainPage mainPage = new DemoQAMainPage(DriverManager::getDriver);
+        DemoQAElementsPage elementsPage = mainPage.clickElementsCard();
         elementsPage.navigateToWebTables();
         elementsPage.addNewRecord("Test", "Table", "name@email.com", "50", "1000000", "IT");
         Assert.assertTrue(elementsPage.isRecordPresent("Test", "Table"),

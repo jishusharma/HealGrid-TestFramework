@@ -27,7 +27,7 @@ public class DemoQAMainPage extends BasePage {
     private WebElement logo;
 
     public DemoQAMainPage(Supplier<WebDriver> driverSupplier) {
-        super(driverSupplier);
+        super(driverSupplier, "https://demoqa.com");
         this.actions = SeleniumActions.getInstance(driverSupplier);
     }
 
@@ -39,6 +39,11 @@ public class DemoQAMainPage extends BasePage {
     @Override
     protected By getUniqueElement() {
         return null;
+    }
+
+    public DemoQAElementsPage clickElementsCard() {
+        clickCategoryCard("Elements");
+        return new DemoQAElementsPage(driverSupplier);
     }
 
     public boolean isBannerImageDisplayed() {

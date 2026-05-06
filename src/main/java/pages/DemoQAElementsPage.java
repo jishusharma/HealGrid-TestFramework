@@ -127,10 +127,6 @@ public class DemoQAElementsPage extends BasePage {
         return actions.getDriver().findElement(locator);
     }
 
-    public void navigateToElementsPage() {
-        actions.navigateToUrl(config.getProperty("DemoQAElementsPageUrl"));
-    }
-
     public void navigateToTextBox() {
         actions.click(textBoxMenu);
     }

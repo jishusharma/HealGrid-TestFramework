@@ -37,7 +37,8 @@ public class DriverFactory {
         WebDriver driver = "grid".equalsIgnoreCase(execution)
                 ? createRemoteDriver(browser)
                 : createLocalDriver(browser);
-        return HealeniumWebDriverFactory.wrapDriver(driver);
+        boolean healEnabled = Boolean.parseBoolean(getConfigValue("heal.enabled", "true"));
+        return healEnabled ? HealeniumWebDriverFactory.wrapDriver(driver) : driver;
     }
 
     public static WebDriver createDriver(String sessionName, String browser) {
@@ -50,7 +51,8 @@ public class DriverFactory {
         WebDriver driver = "grid".equalsIgnoreCase(execution)
                 ? createRemoteDriver(browser)
                 : createLocalDriver(browser);
-        return HealeniumWebDriverFactory.wrapDriver(driver);
+        boolean healEnabled = Boolean.parseBoolean(getConfigValue("heal.enabled", "true"));
+        return healEnabled ? HealeniumWebDriverFactory.wrapDriver(driver) : driver;
     }
 
     private static WebDriver createBrowserStackDriver(String sessionName) {
