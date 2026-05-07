@@ -26,7 +26,19 @@ pipeline {
             steps {
                 echo 'Starting PostgreSQL database...'
                 sh 'docker-compose -f $COMPOSE_FILE up -d postgres-db'
-                sh 'timeout 30 bash -c "until echo > /dev/tcp/localhost/5432; do sleep 2; done"'
+                sh '''
+                    set +e
+                    echo "Waiting for PostgreSQL to become ready..."
+                    for i in $(seq 1 15); do
+                        docker-compose -f $COMPOSE_FILE exec -T postgres-db pg_isready -U healenium_user -d healenium
+                        if [ $? -eq 0 ]; then
+                            echo "PostgreSQL is ready."
+                            break
+                        fi
+                        echo "PostgreSQL not ready yet. Retrying in 2 seconds... (attempt $i/15)"
+                        sleep 2
+                    done
+                '''
                 echo 'PostgreSQL is ready.'
             }
         }
