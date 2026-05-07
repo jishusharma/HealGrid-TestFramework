@@ -20,8 +20,9 @@ public class TrendReporter {
         Connection conn = DriverManager.getConnection(url, dbUser, dbPass);
 
         // Find the last N distinct build numbers (ordered by latest run_at)
-        String buildsSQL = "SELECT DISTINCT build FROM healenium.test_results " +
+        String buildsSQL = "SELECT build FROM healenium.test_results " +
                 "WHERE build IS NOT NULL " +
+                "GROUP BY build " +
                 "ORDER BY MAX(run_at) DESC LIMIT " + builds;
         Statement s = conn.createStatement();
         ResultSet brs = s.executeQuery(buildsSQL);
@@ -61,7 +62,7 @@ public class TrendReporter {
         }
 
         StringBuilder report = new StringBuilder();
-        report.append("Trend over last ").append(builds).append(" builds (").append(buildList.get(0)).append(" ... ").append(buildList.get(buildList.size()-1)).append(")\n\n");
+        report.append("Trend over last ").append(builds).append(" builds (").append(buildList.get(0)).append(" ... ").append(buildList.get(buildList.size() - 1)).append(")\n\n");
         report.append(String.format("%-15s | %-8s | %s%n", "Suite", "Pass Rate", "Total Runs"));
         report.append("-".repeat(45)).append("\n");
         for (Map.Entry<String, Map<String, Long>> entry : suiteData.entrySet()) {
