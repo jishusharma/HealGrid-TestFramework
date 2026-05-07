@@ -22,6 +22,14 @@ pipeline {
                 sh 'mvn clean compile -q'
             }
         }
+        stage('Start DB') {
+            steps {
+                echo 'Starting PostgreSQL database...'
+                sh 'docker-compose -f $COMPOSE_FILE up -d postgres-db'
+                sh 'timeout 30 bash -c "until echo > /dev/tcp/localhost/5432; do sleep 2; done"'
+                echo 'PostgreSQL is ready.'
+            }
+        }
         stage('API Tests') {
             steps {
                 echo 'Running REST Assured API tests...'
@@ -50,7 +58,7 @@ pipeline {
             steps {
                 echo 'Starting Grid + Healenium + Running tests...'
                 sh 'mkdir -p target/surefire-reports/junitreports'
-                sh 'docker-compose -f $COMPOSE_FILE up --build --abort-on-container-exit postgres-db healenium selector-imitator selenium-hub chrome firefox test-runner'
+                sh 'docker-compose -f $COMPOSE_FILE up --build --abort-on-container-exit healenium selector-imitator selenium-hub chrome firefox test-runner'
                 sh 'docker cp $(docker-compose -f $COMPOSE_FILE ps -q --all test-runner):/app/target/surefire-reports/. target/surefire-reports/'
                 sh 'ls -la target/surefire-reports/'
             }
@@ -92,7 +100,7 @@ pipeline {
         stage('Persist Results') {
             steps {
                 echo 'Persisting test results to Postgres...'
-                withEnv(["DB_HOST=postgres-db", "DB_PORT=5432", "DB_NAME=healenium", "DB_USER=healenium_user", "DB_PASSWORD=healenium_password"]) {
+                withEnv(["DB_HOST=host.docker.internal", "DB_PORT=5432", "DB_NAME=healenium", "DB_USER=healenium_user", "DB_PASSWORD=healenium_password"]) {
                     sh 'mvn verify -P observability -DskipTests'
                 }
             }
@@ -100,7 +108,7 @@ pipeline {
         stage('Flaky Detection') {
             steps {
                 echo 'Detecting flaky tests from history...'
-                withEnv(["DB_HOST=postgres-db", "DB_PORT=5432", "DB_NAME=healenium", "DB_USER=healenium_user", "DB_PASSWORD=healenium_password"]) {
+                withEnv(["DB_HOST=host.docker.internal", "DB_PORT=5432", "DB_NAME=healenium", "DB_USER=healenium_user", "DB_PASSWORD=healenium_password"]) {
                     sh 'mvn exec:java -Dexec.mainClass=observability.FlakyDetector -Dexec.classpathScope=runtime'
                 }
                 archiveArtifacts artifacts: 'target/observability/flaky-report.json', allowEmptyArchive: true
@@ -109,7 +117,7 @@ pipeline {
         stage('Trend Report') {
             steps {
                 echo 'Generating build‑based trend report...'
-                withEnv(["DB_HOST=postgres-db", "DB_PORT=5432", "DB_NAME=healenium", "DB_USER=healenium_user", "DB_PASSWORD=healenium_password"]) {
+                withEnv(["DB_HOST=host.docker.internal", "DB_PORT=5432", "DB_NAME=healenium", "DB_USER=healenium_user", "DB_PASSWORD=healenium_password"]) {
                     sh 'mvn exec:java -Dexec.mainClass=observability.TrendReporter -Dexec.classpathScope=runtime'
                 }
                 archiveArtifacts artifacts: 'target/observability/trend-report.txt', allowEmptyArchive: true
@@ -135,7 +143,6 @@ pipeline {
             echo 'Cleaning up containers...'
             sh 'docker-compose stop postgres-db healenium selector-imitator selenium-hub chrome firefox test-runner'
             sh 'docker-compose rm -f postgres-db healenium selector-imitator selenium-hub chrome firefox test-runner'
-            // Send email with Allure report link
             emailext(
                 subject: "HealGrid Test Results - ${currentBuild.currentResult}",
                 body: """
@@ -143,7 +150,7 @@ pipeline {
                     <p>Status: ${currentBuild.currentResult}</p>
                     <p>Allure Report: <a href="${env.BUILD_URL}Allure_20Report/">View Report</a></p>
                 """,
-                to: 'your-team@example.com'   // ← CHANGE to your actual email list
+                to: 'your-team@example.com'
             )
         }
         success {
