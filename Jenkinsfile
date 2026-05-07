@@ -26,7 +26,7 @@ pipeline {
             steps {
                 echo 'Running REST Assured API tests...'
                 withCredentials([string(credentialsId: 'REQRES_API_KEY', variable: 'REQRES_API_KEY')]) {
-                    sh 'mvn test -Dsurefire.suiteXmlFiles=testNgXmls/api.xml'
+                    sh 'mvn test -Dsurefire.suiteXmlFiles=testNgXmls/api.xml -Dsuite.name=api'
                 }
                 sh 'cp target/surefire-reports/TEST-TestSuite.xml target/surefire-reports/TEST-API-TestSuite.xml'
             }
@@ -40,9 +40,8 @@ pipeline {
                     withCredentials([string(credentialsId: 'BROWSERSTACK_USERNAME', variable: 'BROWSERSTACK_USERNAME'),
                                      string(credentialsId: 'BROWSERSTACK_ACCESS_KEY', variable: 'BROWSERSTACK_ACCESS_KEY')]) {
                         echo 'Running mobile Android tests on BrowserStack...'
-                        sh 'mvn test -Dsurefire.suiteXmlFiles=testNgXmls/mobile.xml -Dexecution=browserstack -Dbs.device="Samsung Galaxy S23" -Dbs.os.version=13.0'
-                        echo 'Running mobile iOS tests on BrowserStack...'
-                        sh 'mvn test -Dsurefire.suiteXmlFiles=testNgXmls/mobile_ios.xml -Dexecution=browserstack -Dbs.device="iPhone 14" -Dbs.os.version=16'
+                        sh "mvn test -Dsurefire.suiteXmlFiles=testNgXmls/mobile.xml -Dexecution=browserstack -Dbs.device=\"Samsung Galaxy S23\" -Dbs.os.version=13.0 -Dbuild.name=\"HealGrid-Mobile-${env.BUILD_NUMBER}\" -Dsuite.name=mobile -Dbrowser.name=android"
+                        sh "mvn test -Dsurefire.suiteXmlFiles=testNgXmls/mobile_ios.xml -Dexecution=browserstack -Dbs.device=\"iPhone 14\" -Dbs.os.version=16 -Dbuild.name=\"HealGrid-Mobile-${env.BUILD_NUMBER}\" -Dsuite.name=mobile -Dbrowser.name=ios"
                     }
                 }
             }
@@ -90,6 +89,32 @@ pipeline {
                 }
             }
         }
+        stage('Persist Results') {
+            steps {
+                echo 'Persisting test results to Postgres...'
+                withEnv(["DB_HOST=postgres-db", "DB_PORT=5432", "DB_NAME=healenium", "DB_USER=healenium_user", "DB_PASSWORD=healenium_password"]) {
+                    sh 'mvn verify -P observability -DskipTests'
+                }
+            }
+        }
+        stage('Flaky Detection') {
+            steps {
+                echo 'Detecting flaky tests from history...'
+                withEnv(["DB_HOST=postgres-db", "DB_PORT=5432", "DB_NAME=healenium", "DB_USER=healenium_user", "DB_PASSWORD=healenium_password"]) {
+                    sh 'mvn exec:java -Dexec.mainClass=observability.FlakyDetector -Dexec.classpathScope=runtime'
+                }
+                archiveArtifacts artifacts: 'target/observability/flaky-report.json', allowEmptyArchive: true
+            }
+        }
+        stage('Trend Report') {
+            steps {
+                echo 'Generating build‑based trend report...'
+                withEnv(["DB_HOST=postgres-db", "DB_PORT=5432", "DB_NAME=healenium", "DB_USER=healenium_user", "DB_PASSWORD=healenium_password"]) {
+                    sh 'mvn exec:java -Dexec.mainClass=observability.TrendReporter -Dexec.classpathScope=runtime'
+                }
+                archiveArtifacts artifacts: 'target/observability/trend-report.txt', allowEmptyArchive: true
+            }
+        }
         stage('Report') {
             steps {
                 echo 'Publishing Allure report...'
@@ -110,6 +135,16 @@ pipeline {
             echo 'Cleaning up containers...'
             sh 'docker-compose stop postgres-db healenium selector-imitator selenium-hub chrome firefox test-runner'
             sh 'docker-compose rm -f postgres-db healenium selector-imitator selenium-hub chrome firefox test-runner'
+            // Send email with Allure report link
+            emailext(
+                subject: "HealGrid Test Results - ${currentBuild.currentResult}",
+                body: """
+                    <p>Build: <a href="${env.BUILD_URL}">${env.JOB_NAME} #${env.BUILD_NUMBER}</a></p>
+                    <p>Status: ${currentBuild.currentResult}</p>
+                    <p>Allure Report: <a href="${env.BUILD_URL}Allure_20Report/">View Report</a></p>
+                """,
+                to: 'your-team@example.com'   // ← CHANGE to your actual email list
+            )
         }
         success {
             echo 'Pipeline passed!'
