@@ -1,6 +1,7 @@
 package observability;
 
 import java.sql.*;
+import java.nio.file.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -21,7 +22,7 @@ public class FlakyDetector {
         String url = "jdbc:postgresql://" + dbHost + ":" + dbPort + "/" + dbName;
         Connection conn = DriverManager.getConnection(url, dbUser, dbPass);
 
-        // Query the last N runs for each test (excluding INFRA status, as it's environment noise)
+        // Get the last N runs for each test, excluding INFRA results
         String sql = "SELECT test_name, status, run_at FROM healenium.test_results " +
                 "WHERE status IN ('PASSED', 'FAILED') " +
                 (suiteFilter != null ? "AND suite = ? " : "") +
@@ -32,7 +33,6 @@ public class FlakyDetector {
         }
         ResultSet rs = stmt.executeQuery();
 
-        // Group results by test name, keeping only the last 'window' entries
         Map<String, List<String>> testHistory = new LinkedHashMap<>();
         while (rs.next()) {
             String testName = rs.getString("test_name");
@@ -40,15 +40,15 @@ public class FlakyDetector {
             testHistory.computeIfAbsent(testName, k -> new ArrayList<>()).add(status);
         }
 
-        // Trim each list to window size (the most recent 'window' runs)
+        // Trim to last 'window' runs per test
         testHistory.forEach((test, statuses) -> {
             if (statuses.size() > window) {
                 statuses.subList(window, statuses.size()).clear();
             }
         });
 
-        // Detect flaky: at least one transition PASSED<->FAILED in the window
-        List<Map<String, Object>> flakyReport = new ArrayList<>();
+        // Detect flakiness and collect transition details
+        List<Map<String, Object>> flakyResults = new ArrayList<>();
         for (Map.Entry<String, List<String>> entry : testHistory.entrySet()) {
             String test = entry.getKey();
             List<String> statuses = entry.getValue();
@@ -58,22 +58,57 @@ public class FlakyDetector {
                     transitions++;
                 }
             }
-            String verdict = transitions > 0 ? "FLAKY" : "STABLE";
-            Map<String, Object> result = new HashMap<>();
+            Map<String, Object> result = new LinkedHashMap<>();
             result.put("test", test);
             result.put("transitions", transitions);
-            result.put("verdict", verdict);
-            flakyReport.add(result);
+            result.put("verdict", transitions > 0 ? "FLAKY" : "STABLE");
+            // Build a compact history string: last statuses in chronological order
+            List<String> chronological = new ArrayList<>(statuses);
+            Collections.reverse(chronological);
+            result.put("history", String.join(" → ", chronological));
+            flakyResults.add(result);
         }
 
-        // Write JSON report
-        java.nio.file.Files.createDirectories(java.nio.file.Paths.get("target/observability"));
-        String json = flakyReport.stream()
-                .map(m -> String.format("  { \"test\": \"%s\", \"transitions\": %d, \"verdict\": \"%s\" }",
-                        m.get("test"), m.get("transitions"), m.get("verdict")))
-                .collect(Collectors.joining(",\n", "[\n", "\n]"));
-        java.nio.file.Files.writeString(java.nio.file.Paths.get("target/observability/flaky-report.json"), json);
-        System.out.println("Flaky report written to target/observability/flaky-report.json");
+        // Generate HTML with colour‑coded table
+        StringBuilder html = new StringBuilder();
+        html.append("<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n");
+        html.append("<meta charset=\"UTF-8\">\n");
+        html.append("<title>Flaky Test Report</title>\n");
+        html.append("<style>");
+        html.append("body { font-family: Arial, sans-serif; margin: 40px; }");
+        html.append("h1 { color: #333; }");
+        html.append("table { border-collapse: collapse; width: 100%; max-width: 1000px; }");
+        html.append("th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }");
+        html.append("th { background-color: #f2f2f2; }");
+        html.append(".stable { background-color: #e8f5e9; }");
+        html.append(".flaky { background-color: #fff3e0; }");
+        html.append(".badge { padding: 4px 8px; border-radius: 12px; font-weight: bold; }");
+        html.append(".badge-stable { background-color: #4CAF50; color: white; }");
+        html.append(".badge-flaky { background-color: #FF9800; color: white; }");
+        html.append("</style>\n");
+        html.append("</head>\n<body>\n");
+        html.append("<h1>Flaky Test Detection (Last ").append(window).append(" Builds)</h1>\n");
+        html.append("<table>\n");
+        html.append("<tr><th>Test</th><th>Status</th><th>Transitions</th><th>Recent History</th></tr>\n");
+
+        for (Map<String, Object> row : flakyResults) {
+            String verdict = (String) row.get("verdict");
+            String rowClass = "STABLE".equals(verdict) ? "stable" : "flaky";
+            String badgeClass = "STABLE".equals(verdict) ? "badge-stable" : "badge-flaky";
+            html.append("<tr class=\"").append(rowClass).append("\">");
+            html.append("<td>").append(row.get("test")).append("</td>");
+            html.append("<td><span class=\"badge ").append(badgeClass).append("\">").append(verdict).append("</span></td>");
+            html.append("<td>").append(row.get("transitions")).append("</td>");
+            html.append("<td>").append(row.get("history")).append("</td>");
+            html.append("</tr>\n");
+        }
+
+        html.append("</table>\n");
+        html.append("</body>\n</html>");
+
+        Files.createDirectories(Paths.get("target/observability"));
+        Files.writeString(Paths.get("target/observability/flaky-report.html"), html.toString());
+        System.out.println("Flaky report written to target/observability/flaky-report.html");
 
         rs.close();
         stmt.close();

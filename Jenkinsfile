@@ -135,7 +135,7 @@ pipeline {
                 withEnv(["DB_HOST=host.docker.internal", "DB_PORT=5432", "DB_NAME=healenium", "DB_USER=healenium_user", "DB_PASSWORD=healenium_password"]) {
                     sh 'mvn exec:java -Dexec.mainClass=observability.FlakyDetector -Dexec.classpathScope=runtime'
                 }
-                archiveArtifacts artifacts: 'target/observability/flaky-report.json', allowEmptyArchive: true
+                archiveArtifacts artifacts: 'target/observability/flaky-report.html', allowEmptyArchive: true
             }
         }
         stage('Trend Report') {
@@ -144,12 +144,19 @@ pipeline {
                 withEnv(["DB_HOST=host.docker.internal", "DB_PORT=5432", "DB_NAME=healenium", "DB_USER=healenium_user", "DB_PASSWORD=healenium_password"]) {
                     sh 'mvn exec:java -Dexec.mainClass=observability.TrendReporter -Dexec.classpathScope=runtime'
                 }
-                archiveArtifacts artifacts: 'target/observability/trend-report.txt', allowEmptyArchive: true
+                archiveArtifacts artifacts: 'target/observability/trend-report.html', allowEmptyArchive: true
             }
         }
         stage('Report') {
             steps {
-                echo 'Publishing Allure report...'
+                echo 'Preparing Allure history and generating report...'
+                script {
+                    def prevBuild = currentBuild.previousSuccessfulBuild
+                    if (prevBuild != null) {
+                        def prevHist = "${JENKINS_HOME}/jobs/${env.JOB_NAME}/builds/${prevBuild.number}/archive/target/allure-report/history"
+                        sh "cp -r ${prevHist} ${WORKSPACE}/target/allure-results/history 2>/dev/null || true"
+                    }
+                }
                 sh 'allure generate target/allure-results --clean -o target/allure-report'
                 publishHTML([
                     allowMissing: false,
@@ -159,11 +166,29 @@ pipeline {
                     reportFiles: 'index.html',
                     reportName: 'Allure Report'
                 ])
+                publishHTML([
+                    allowMissing: true,
+                    alwaysLinkToLastBuild: true,
+                    keepAll: true,
+                    reportDir: 'target/observability',
+                    reportFiles: 'flaky-report.html',
+                    reportName: 'Flaky Report'
+                ])
+                publishHTML([
+                    allowMissing: true,
+                    alwaysLinkToLastBuild: true,
+                    keepAll: true,
+                    reportDir: 'target/observability',
+                    reportFiles: 'trend-report.html',
+                    reportName: 'Trend Report'
+                ])
             }
         }
     }
     post {
         always {
+            echo 'Archiving Allure history for next build...'
+            archiveArtifacts artifacts: 'target/allure-report/history/**', allowEmptyArchive: true
             echo 'Cleaning up containers...'
             sh 'docker-compose stop postgres-db healenium selector-imitator selenium-hub chrome firefox test-runner'
             sh 'docker-compose rm -f postgres-db healenium selector-imitator selenium-hub chrome firefox test-runner'
