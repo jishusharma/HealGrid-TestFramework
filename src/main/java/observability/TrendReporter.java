@@ -73,7 +73,7 @@ public class TrendReporter {
         pstmt.close();
         conn.close();
 
-        // Build HTML with Chart.js
+        // Build HTML with Chart.js and a 95% threshold line
         StringBuilder html = new StringBuilder();
         html.append("<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n");
         html.append("<meta charset=\"UTF-8\">\n");
@@ -124,6 +124,23 @@ public class TrendReporter {
             datasetsJson.append("}");
             suiteIndex++;
         }
+
+        // Add 95% threshold line dataset
+        datasetsJson.append(", {\n");
+        datasetsJson.append("  label: \"95% Threshold\",\n");
+        datasetsJson.append("  data: [");
+        for (int i = 0; i < buildLabels.size(); i++) {
+            if (i > 0) datasetsJson.append(", ");
+            datasetsJson.append("95");
+        }
+        datasetsJson.append("],\n");
+        datasetsJson.append("  borderColor: \"#F44336\",\n");
+        datasetsJson.append("  borderWidth: 1,\n");
+        datasetsJson.append("  borderDash: [5, 5],\n");
+        datasetsJson.append("  pointRadius: 0,\n");
+        datasetsJson.append("  fill: false,\n");
+        datasetsJson.append("  showLine: true\n");
+        datasetsJson.append("}");
 
         html.append("<script>\n");
         html.append("const ctx = document.getElementById('trendChart').getContext('2d');\n");
