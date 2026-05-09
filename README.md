@@ -1,15 +1,13 @@
 # HealGrid Automation Framework
 
+![Java](https://img.shields.io/badge/Java-17-blue)
+![Grid](https://img.shields.io/badge/Selenium%20Grid-4.21-orange)
+![BrowserStack](https://img.shields.io/badge/BrowserStack-cloud-orange)
+![AI Failure Classification](https://img.shields.io/badge/AI-Failure%20Classification-purple)
+
 A Java test automation framework built around execution reliability and observability.
 Covers API, Selenium Grid, and Mobile Web from a single codebase — with self-healing locators,
 AI-driven failure classification, and historical test health tracking via PostgreSQL.
-
-![Java](https://img.shields.io/badge/Java-17-blue)
-![Selenium](https://img.shields.io/badge/Selenium-4.11-green)
-![Healenium](https://img.shields.io/badge/Healenium-3.5.1-purple)
-![TestNG](https://img.shields.io/badge/TestNG-7.4-red)
-![Docker](https://img.shields.io/badge/Docker-ready-blue)
-![Grid](https://img.shields.io/badge/Selenium%20Grid-4.21-orange)
 
 ---
 
@@ -24,7 +22,7 @@ AI-driven failure classification, and historical test health tracking via Postgr
 - **ThreadLocal DriverFactory** — parallel-safe driver lifecycle with 4-level config fallback (JVM flag → env var → properties file → default)
 - **Self-healing locators** — Healenium wraps the driver and recovers broken selectors automatically; healing history persisted in PostgreSQL
 - **Three execution targets** — local JVM, Dockerized Selenium Grid (Chrome + Firefox nodes), BrowserStack cloud (Android + iOS)
-- **AI-driven failure classification and selective rerun** — `AiFailureAnalyzer` classifies failures post-run via Groq API and reruns only transient failures in the same build, leaving genuine defects flagged
+- **LLM-based failure classification and selective rerun** — `AiFailureAnalyzer` classifies failures post-run via Groq API and reruns only transient failures in the same build, leaving genuine defects flagged
 - **AI-based visual validation** — OpenCV compares screenshots against baselines to catch visual regressions that DOM assertions cannot detect
 - **Flaky detection** — `FlakyDetector` queries the last 5 runs per test and classifies each as `STABLE` or `FLAKY`, excluding infra noise
 - **Trend reporting** — `TrendReporter` computes suite pass rate across recent builds from PostgreSQL; no external analytics dependency
