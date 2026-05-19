@@ -6,12 +6,11 @@ import io.qameta.allure.Epic;
 import io.qameta.allure.Feature;
 import io.qameta.allure.Story;
 import io.restassured.builder.RequestSpecBuilder;
+import io.restassured.response.Response;
 import io.restassured.specification.RequestSpecification;
 import org.testng.ITestContext;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
-
-import static org.hamcrest.Matchers.notNullValue;
 
 @Epic("Auth API Testing")
 @Feature("User Authentication")
@@ -43,10 +42,13 @@ public class AuthApiTest extends BaseApiTest {
     @Story("Login")
     @Test
     public void valid_login_returns200() {
-        authApi.login("eve.holt@reqres.in", "cityslicka")
-                .then()
+        Response response = authApi.login("eve.holt@reqres.in", "cityslicka");
+        String body = response.then()
                 .statusCode(STATUS_CODE_200)
-                .body("token", notNullValue());
+                .extract()
+                .asString();
+
+        assertJsonStringPresent(body, "token");
     }
 
     @Story("Authenticated request")

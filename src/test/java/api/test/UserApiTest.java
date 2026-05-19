@@ -2,6 +2,7 @@ package api.test;
 
 import api.base.BaseApiTest;
 import api.service.UserApi;
+import io.restassured.response.Response;
 import io.qameta.allure.Epic;
 import io.qameta.allure.Feature;
 import io.qameta.allure.Story;
@@ -11,7 +12,7 @@ import org.testng.annotations.Test;
 
 import static io.restassured.module.jsv.JsonSchemaValidator.matchesJsonSchemaInClasspath;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.lessThan;
 
 @Epic("API Testing")
 @Feature("User Endpoints")
@@ -45,22 +46,29 @@ public class UserApiTest extends BaseApiTest {
     @Story("Get single user with correct Id")
     @Test
     public void getSingleUser_returnsCorrectId() {
-        userApi.getUserById(2)
-                .then()
+        Response response = userApi.getUserById(2);
+        String body = response.then()
                 .statusCode(STATUS_CODE_200)
-                .body("id", equalTo(2))
-                .body("name", notNullValue())
-                .body("email", notNullValue())
-                .body(matchesJsonSchemaInClasspath("schemas/user-schema.json"));
+                .extract()
+                .asString();
+
+        assertJsonNumber(body, "id", 2);
+        assertJsonStringPresent(body, "name");
+        assertJsonStringPresent(body, "email");
+
+        response.then().body(matchesJsonSchemaInClasspath("schemas/user-schema.json"));
     }
 
     @Story("Create user")
     @Test
     public void createUser_returns201() {
-        userApi.createUser("Jishu", "QA Engineer")
+        String body = userApi.createUser("Jishu", "QA Engineer")
                 .then()
                 .statusCode(STATUS_CODE_201)
-                .body("name", equalTo("Jishu"));
+                .extract()
+                .asString();
+
+        assertJsonStringValue(body, "name", "Jishu");
     }
 
     @Story("Verify 404 when user not found")
