@@ -93,7 +93,8 @@ pipeline {
             }
             post {
                 always {
-                    sh 'docker-compose -f $COMPOSE_FILE down test-runner chrome firefox selenium-hub healenium selector-imitator || true'
+                    sh 'docker-compose -f $COMPOSE_FILE stop test-runner chrome firefox selenium-hub healenium selector-imitator || true'
+                    sh 'docker-compose -f $COMPOSE_FILE rm -f test-runner chrome firefox selenium-hub healenium selector-imitator || true'
                 }
             }
         }
@@ -200,8 +201,8 @@ pipeline {
             echo 'Archiving Allure history for next build...'
             archiveArtifacts artifacts: 'target/allure-report/history/**', allowEmptyArchive: true
             echo 'Cleaning up containers...'
-            sh 'docker-compose stop postgres-db healenium selector-imitator selenium-hub chrome firefox test-runner'
-            sh 'docker-compose rm -f postgres-db healenium selector-imitator selenium-hub chrome firefox test-runner'
+            sh 'docker-compose -f $COMPOSE_FILE stop healenium selector-imitator selenium-hub chrome firefox test-runner || true'
+            sh 'docker-compose -f $COMPOSE_FILE rm -f healenium selector-imitator selenium-hub chrome firefox test-runner || true'
             emailext(
                 subject: "HealGrid Test Results - ${currentBuild.currentResult}",
                 body: """

@@ -26,6 +26,7 @@ public class TestResultPersister {
         String url = "jdbc:postgresql://" + dbHost + ":" + dbPort + "/" + dbName;
         Connection conn = DriverManager.getConnection(url, dbUser, dbPass);
         conn.setAutoCommit(false);
+        ensureResultsTable(conn);
 
         String sql = "INSERT INTO healenium.test_results (test_name, suite, browser, status, duration_ms, build, error_message) VALUES (?, ?, ?, ?, ?, ?, ?)";
         PreparedStatement stmt = conn.prepareStatement(sql);
@@ -118,5 +119,22 @@ public class TestResultPersister {
     private static String envOr(String key, String defaultVal) {
         String val = System.getenv(key);
         return val != null ? val : defaultVal;
+    }
+
+    private static void ensureResultsTable(Connection conn) throws SQLException {
+        try (Statement stmt = conn.createStatement()) {
+            stmt.execute("CREATE SCHEMA IF NOT EXISTS healenium");
+            stmt.execute("CREATE TABLE IF NOT EXISTS healenium.test_results (" +
+                    "id SERIAL PRIMARY KEY, " +
+                    "test_name VARCHAR(300) NOT NULL, " +
+                    "suite VARCHAR(100), " +
+                    "browser VARCHAR(50), " +
+                    "status VARCHAR(20) NOT NULL, " +
+                    "duration_ms BIGINT, " +
+                    "build VARCHAR(100), " +
+                    "run_at TIMESTAMP DEFAULT now(), " +
+                    "error_message TEXT" +
+                    ")");
+        }
     }
 }
