@@ -1,9 +1,16 @@
 package observability;
 
-import java.sql.*;
-import java.nio.file.*;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 public class FlakyDetector {
 
@@ -22,8 +29,9 @@ public class FlakyDetector {
         String url = "jdbc:postgresql://" + dbHost + ":" + dbPort + "/" + dbName;
         Connection conn = DriverManager.getConnection(url, dbUser, dbPass);
 
-        String sql = "SELECT test_name, status, run_at FROM healenium.test_results " +
+        String sql = "SELECT test_name, status, failure_category, run_at FROM healenium.test_results " +
                 "WHERE status IN ('PASSED', 'FAILED') " +
+                "AND (status = 'PASSED' OR COALESCE(failure_category, 'UNKNOWN') NOT IN ('INFRA', 'CONFIG', 'SETUP')) " +
                 (suiteFilter != null ? "AND suite = ? " : "") +
                 "ORDER BY test_name, run_at DESC";
         PreparedStatement stmt = conn.prepareStatement(sql);
@@ -52,15 +60,14 @@ public class FlakyDetector {
             int transitions = countTransitions(statuses);
             String verdict = transitions > 0 ? "FLAKY" : "STABLE";
 
-            // Status change detection: compare with previous window (without most recent run)
-            String change = "—";
+            String change = "-";
             if (statuses.size() > 1) {
-                List<String> prevStatuses = statuses.subList(1, statuses.size());
-                int prevTransitions = countTransitions(prevStatuses);
-                if (prevTransitions == 0 && transitions > 0) {
-                    change = "🆕 NEW";
-                } else if (prevTransitions > 0 && transitions == 0) {
-                    change = "✅ RESOLVED";
+                List<String> previousStatuses = statuses.subList(1, statuses.size());
+                int previousTransitions = countTransitions(previousStatuses);
+                if (previousTransitions == 0 && transitions > 0) {
+                    change = "NEW";
+                } else if (previousTransitions > 0 && transitions == 0) {
+                    change = "RESOLVED";
                 }
             }
 
@@ -70,15 +77,14 @@ public class FlakyDetector {
             result.put("test", test);
             result.put("transitions", transitions);
             result.put("verdict", verdict);
-            result.put("history", String.join(" → ", chronological));
+            result.put("history", String.join(" -> ", chronological));
             result.put("change", change);
             flakyResults.add(result);
         }
 
-        // Generate HTML with summary and colour‑coded table
         long flakyCount = flakyResults.stream().filter(r -> "FLAKY".equals(r.get("verdict"))).count();
         long stableCount = flakyResults.size() - flakyCount;
-        double flakyPct = flakyResults.size() > 0 ? (flakyCount * 100.0 / flakyResults.size()) : 0.0;
+        double flakyPct = flakyResults.isEmpty() ? 0.0 : flakyCount * 100.0 / flakyResults.size();
 
         StringBuilder html = new StringBuilder();
         html.append("<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n");
@@ -87,6 +93,7 @@ public class FlakyDetector {
         html.append("<style>");
         html.append("body { font-family: Arial, sans-serif; margin: 40px; }");
         html.append("h1 { color: #333; }");
+        html.append("p { color: #555; }");
         html.append(".summary { font-size: 1.1em; margin-bottom: 20px; }");
         html.append(".summary .flaky { color: #FF9800; font-weight: bold; }");
         html.append(".summary .stable { color: #4CAF50; font-weight: bold; }");
@@ -102,7 +109,8 @@ public class FlakyDetector {
         html.append(".badge-resolved { background-color: #2196F3; color: white; font-size: 0.8em; margin-left: 5px; }");
         html.append("</style>\n");
         html.append("</head>\n<body>\n");
-        html.append("<h1>Flaky Test Detection (Last ").append(window).append(" Builds)</h1>\n");
+        html.append("<h1>Flaky Test Detection (Last ").append(window).append(" Runs)</h1>\n");
+        html.append("<p>Infrastructure, configuration, and setup failures are excluded from flaky classification.</p>\n");
 
         html.append("<div class=\"summary\">");
         html.append("<span class=\"flaky\">").append(flakyCount).append(" flaky</span> / ");
@@ -119,9 +127,9 @@ public class FlakyDetector {
             String badgeClass = "STABLE".equals(verdict) ? "badge-stable" : "badge-flaky";
             String change = (String) row.get("change");
             String changeBadge = "";
-            if ("🆕 NEW".equals(change)) {
+            if ("NEW".equals(change)) {
                 changeBadge = "<span class=\"badge badge-new\">NEW</span>";
-            } else if ("✅ RESOLVED".equals(change)) {
+            } else if ("RESOLVED".equals(change)) {
                 changeBadge = "<span class=\"badge badge-resolved\">RESOLVED</span>";
             }
             html.append("<tr class=\"").append(rowClass).append("\">");
